@@ -2,10 +2,11 @@
   "name": "Desafios do Amor",
   "short_name": "Desafios",
   "description": "Fortaleça seu relacionamento com desafios diários de carinho, amor e intimidade.",
-  
-  "id": "/desafios-do-amor/",
-  "start_url": "/desafios-do-amor/index.html",
-  "scope": "/desafios-do-amor/",
+
+  "id": "desafios-do-amor-app-2026",
+
+  "start_url": "/Desafios-do-amor/index.html",
+  "scope": "/Desafios-do-amor/",
 
   "display": "standalone",
   "background_color": "#f5576c",
@@ -14,12 +15,12 @@
 
   "icons": [
     {
-      "src": "/desafios-do-amor/icon-192.png",
+      "src": "/Desafios-do-amor/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/desafios-do-amor/icon-512.png",
+      "src": "/Desafios-do-amor/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
