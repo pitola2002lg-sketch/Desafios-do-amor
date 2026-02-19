@@ -2,22 +2,26 @@
   "name": "Desafios do Amor",
   "short_name": "Desafios",
   "description": "Fortaleça seu relacionamento com desafios diários de carinho, amor e intimidade.",
-  "start_url": "./",
+  
+  "id": "/desafios-do-amor/",
+  "start_url": "/desafios-do-amor/index.html",
+  "scope": "/desafios-do-amor/",
+
   "display": "standalone",
   "background_color": "#f5576c",
   "theme_color": "#f5576c",
   "orientation": "portrait",
+
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/desafios-do-amor/icon-192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "icon-512.png",
+      "src": "/desafios-do-amor/icon-512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "scope": "./"
+  ]
 }
