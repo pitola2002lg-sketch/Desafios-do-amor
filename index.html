@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafios do Amor 💕</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            transition: background 0.3s ease;
+        }
+
+        /* Modo Escuro */
+        body.dark-mode {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        body.dark-mode .container {
+            background: #0f3460;
+            color: #e1e1e1;
+        }
+
+        body.dark-mode .header {
+            background: linear-gradient(135deg, #533483 0%, #7b2869 100%);
+        }
+
+        body.dark-mode .content {
+            background: #0f3460;
+        }
+
+        body.dark-mode .calendar-wrapper {
+            background: #1a1a2e;
+        }
+
+        body.dark-mode .calendar-day {
+            background: #16213e;
+            color: #e1e1e1;
+        }
+
+        body.dark-mode .calendar-day:hover:not(.empty) {
+            background: #533483;
+        }
+
+        body.dark-mode .calendar-header {
+            color: #e94560;
+        }
+
+        body.dark-mode .calendar-navigation h2 {
+            color: #e94560;
+        }
+
+        body.dark-mode .challenge-list-item {
+            background: #16213e;
+            border-left-color: #e94560;
+            color: #e1e1e1;
+        }
+
+        body.dark-mode .challenge-list-item strong {
+            color: #e94560;
+        }
+
+        body.dark-mode .category-btn {
+            background: #16213e;
+            color: #e94560;
+        }
+
+        body.dark-mode .category-btn.active {
+            background: linear-gradient(135deg, #533483 0%, #7b2869 100%);
+            color: white;
+        }
+
+        body.dark-mode .stats-title {
+            color: #e94560;
+        }
+
+        body.dark-mode .gender-selection h2 {
+            color: #e94560;
+        }
+
+        body.dark-mode .gender-selection p {
+            color: #b8b8b8;
+        }
+
+        body.dark-mode .action-button {
+            background: #16213e;
+            color: #e94560;
+        }
+
+        body.dark-mode .action-button:hover {
+            background: #1a1a2e;
+        }
+
+        .container {
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            max-width: 500px;
+            width: 100%;
+            max-height: 95vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .container::-webkit-scrollbar-thumb {
+            background: #764ba2;
+            border-radius: 4px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 35px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 15px;
+            opacity: 0.95;
+        }
+
+        .content {
+            padding: 25px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Tela de seleção de gênero */
+        .gender-selection {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .gender-selection h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .gender-selection p {
+            color: #666;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .gender-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 25px;
+            margin: 15px 0;
+            border-radius: 18px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .gender-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .gender-button .emoji {
+            font-size: 35px;
+        }
+
+        .menu-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 22px;
+            margin: 12px 0;
+            border-radius: 18px;
+            font-size: 19px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(102, 126, 234, 0.5);
+        }
+
+        .menu-button:active {
+            transform: translateY(-1px);
+        }
+
+        .menu-button.settings {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+
+        .challenge-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 28px;
+            border-radius: 20px;
+            margin: 18px 0;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 4px solid transparent;
+            position: relative;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .challenge-card:hover {
+            transform: scale(1.03) translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+        }
+
+        .challenge-card.selected {
+            border: 4px solid #fff;
+            box-shadow: 0 0 30px rgba(255,255,255,0.6), 0 15px 40px rgba(0,0,0,0.25);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 30px rgba(255,255,255,0.6), 0 15px 40px rgba(0,0,0,0.25); }
+            50% { box-shadow: 0 0 40px rgba(255,255,255,0.8), 0 15px 40px rgba(0,0,0,0.25); }
+        }
+
+        .challenge-card.completed {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .challenge-card.completed::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.1);
+            border-radius: 16px;
+        }
+
+        .challenge-card.completed::after {
+            content: '✅';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 40px;
+            animation: checkmark 0.5s ease;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0) rotate(-45deg); }
+            50% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+
+        .challenge-card h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+            font-weight: 700;
+        }
+
+        .challenge-card p {
+            font-size: 17px;
+            line-height: 1.7;
+            margin: 15px 0;
+            font-weight: 500;
+        }
+
+        .challenge-icon {
+            font-size: 50px;
+            margin-bottom: 12px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .challenge-status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 700;
+            backdrop-filter: blur(10px);
+        }
+
+        .action-button {
+            background: white;
+            color: #764ba2;
+            border: none;
+            padding: 16px 35px;
+            margin: 12px 6px;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .action-button:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        .action-button:active {
+            transform: scale(1.02);
+        }
+
+        /* Calendário melhorado */
+        .calendar-wrapper {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        .calendar-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-navigation button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .calendar-navigation button:hover {
+            transform: scale(1.1);
+        }
+
+        .calendar-navigation h2 {
+            font-size: 20px;
+            color: #764ba2;
+            font-weight: 700;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 6px;
+            margin-top: 15px;
+        }
+
+        .calendar-header {
+            text-align: center;
+            font-weight: 700;
+            color: #764ba2;
+            font-size: 13px;
+            padding: 8px 0;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            color: #333;
+        }
+
+        .calendar-day:hover:not(.empty) {
+            background: #e0e7ff;
+            transform: scale(1.05);
+        }
+
+        .calendar-day.empty {
+            cursor: default;
+            background: transparent;
+        }
+
+        .calendar-day.marked {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            font-weight: 700;
+            position: relative;
+        }
+
+        .calendar-day.marked::after {
+            content: '❤️';
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            font-size: 12px;
+        }
+
+        /* Estatísticas */
+        .stats-section {
+            margin-top: 25px;
+        }
+
+        .stats-title {
+            text-align: center;
+            color: #764ba2;
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.95;
+        }
+
+        .stat-card.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .category-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .category-btn {
+            background: #e0e7ff;
+            color: #764ba2;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .category-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .challenge-list-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            border-left: 4px solid #764ba2;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            line-height: 1.6;
+        }
+
+        .challenge-list-item strong {
+            color: #764ba2;
+            margin-right: 8px;
+        }
+
+        .current-gender {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
+        @media (max-width: 400px) {
+            .calendar-day {
+                font-size: 13px;
+            }
+            
+            .calendar-header {
+                font-size: 11px;
+            }
+            
+            .stat-number {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💕 Desafios do Amor 💕</h1>
+            <p>Fortaleça seu relacionamento com desafios diários</p>
+            <div id="genderDisplay" class="current-gender" style="display: none;"></div>
+            <div style="font-size: 11px; opacity: 0.7; margin-top: 8px;">v2.0</div>
+        </div>
+
+        <div class="content">
+            <!-- Tela de Seleção de Gênero -->
+            <div id="genderScreen" class="screen active">
+                <div class="gender-selection">
+                    <h2>Bem-vindo(a)! 💕</h2>
+                    <p>Para personalizar os desafios de intimidade de acordo com você, por favor selecione seu gênero:</p>
+                    
+                    <button class="gender-button" onclick="selectGender('male')">
+                        <span class="emoji">👨</span>
+                        <span>Masculino</span>
+                    </button>
+                    
+                    <button class="gender-button" onclick="selectGender('female')">
+                        <span class="emoji">👩</span>
+                        <span>Feminino</span>
+                    </button>
+                    
+                    <button class="gender-button" onclick="selectGender('other')">
+                        <span class="emoji">🌈</span>
+                        <span>Prefiro não especificar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Menu Principal -->
+            <div id="menuScreen" class="screen">
+                <button class="menu-button" onclick="showDailyChallenge()">
+                    🎯 Desafio do Dia
+                </button>
+                <button class="menu-button" onclick="showAllChallenges()">
+                    📋 Todos os Desafios
+                </button>
+                <button class="menu-button" onclick="showCalendar()">
+                    📅 Calendário do Amor
+                </button>
+                <button class="menu-button" onclick="showStatistics()">
+                    📊 Estatísticas
+                </button>
+                <button class="menu-button settings" onclick="showGenderScreen()">
+                    ⚙️ Alterar Gênero
+                </button>
+                <button class="menu-button settings" onclick="toggleDarkMode()">
+                    🌙 Modo Escuro
+                </button>
+            </div>
+
+            <!-- Tela de Desafio Diário -->
+            <div id="dailyScreen" class="screen">
+                <h2 style="text-align: center; color: #764ba2; margin-bottom: 15px;" id="dailyDate"></h2>
+                
+                <div class="challenge-card" id="carinhoCard" onclick="selectChallenge('carinho')" 
+                     style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                    <div class="challenge-icon">💝</div>
+                    <h3>Desafio de Carinho</h3>
+                    <p id="carinhoText"></p>
+                    <div class="challenge-status" id="carinhoStatus"></div>
+                </div>
+
+                <div class="challenge-card" id="amorCard" onclick="selectChallenge('amor')" 
+                     style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="challenge-icon">❤️</div>
+                    <h3>Desafio de Amor</h3>
+                    <p id="amorText"></p>
+                    <div class="challenge-status" id="amorStatus"></div>
+                </div>
+
+                <div class="challenge-card" id="sexoCard" onclick="selectChallenge('sexo')" 
+                     style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <div class="challenge-icon">🔥</div>
+                    <h3>Desafio de Intimidade</h3>
+                    <p id="sexoText"></p>
+                    <div class="challenge-status" id="sexoStatus"></div>
+                </div>
+
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="action-button" onclick="getNewDailyChallenge()">🔄 Novos Desafios</button>
+                    <button class="action-button" onclick="showMenu()">🏠 Menu</button>
+                </div>
+            </div>
+
+            <!-- Tela de Todos os Desafios -->
+            <div id="allChallengesScreen" class="screen">
+                <div class="category-buttons">
+                    <button class="category-btn active" onclick="showChallengeCategory('carinho', event)">💝 Carinho</button>
+                    <button class="category-btn" onclick="showChallengeCategory('amor', event)">❤️ Amor</button>
+                    <button class="category-btn" onclick="showChallengeCategory('sexo', event)">🔥 Intimidade</button>
+                </div>
+
+                <div id="challengeList"></div>
+
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="action-button" onclick="showMenu()">🏠 Voltar ao Menu</button>
+                </div>
+            </div>
+
+            <!-- Tela de Calendário -->
+            <div id="calendarScreen" class="screen">
+                <div class="calendar-wrapper">
+                    <div class="calendar-navigation">
+                        <button onclick="previousMonth()">←</button>
+                        <h2 id="calendarMonth"></h2>
+                        <button onclick="nextMonth()">→</button>
+                    </div>
+                    
+                    <div id="calendar" class="calendar"></div>
+                </div>
+
+                <div class="stats-section">
+                    <div class="stats-title">Estatísticas do Mês</div>
+                    <div class="stat-card full-width">
+                        <div class="stat-number" id="monthStats">0</div>
+                        <div class="stat-label">dias especiais ❤️</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="action-button" onclick="showMenu()">🏠 Voltar ao Menu</button>
+                </div>
+            </div>
+
+            <!-- Tela de Estatísticas -->
+            <div id="statisticsScreen" class="screen">
+                <div class="stats-section">
+                    <div class="stats-title">📊 Estatísticas Gerais</div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalDaysYear">0</div>
+                            <div class="stat-label">Dias especiais este ano</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalDaysAll">0</div>
+                            <div class="stat-label">Dias especiais total</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-title" style="margin-top: 25px;">🎯 Desafios Completados</div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number" id="challengesMonth">0</div>
+                            <div class="stat-label">Desafios este mês</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="challengesYear">0</div>
+                            <div class="stat-label">Desafios este ano</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card full-width" style="margin-top: 12px;">
+                        <div class="stat-number" id="challengesTotal">0</div>
+                        <div class="stat-label">Total de desafios completados</div>
+                    </div>
+
+                    <div class="stats-title" style="margin-top: 25px;">💕 Por Categoria</div>
+                    
+                    <div class="stats-grid">
+                        <div class="stat-card" style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);">
+                            <div class="stat-number" id="carinhoTotal">0</div>
+                            <div class="stat-label">💝 Carinho</div>
+                        </div>
+                        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <div class="stat-number" id="amorTotal">0</div>
+                            <div class="stat-label">❤️ Amor</div>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card full-width" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                        <div class="stat-number" id="sexoTotal">0</div>
+                        <div class="stat-label">🔥 Intimidade</div>
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="action-button" onclick="showMenu()">🏠 Voltar ao Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Versão do app
+        const APP_VERSION = "2.0";
+        
+        // Banco de desafios
+        const challenges = {
+            carinho: [
+                "Dê um abraço apertado de 30 segundos",
+                "Faça uma massagem relaxante nas costas",
+                "Escreva uma carta de amor",
+                "Prepare o café da manhã na cama",
+                "Dê 10 beijos no rosto",
+                "Façam uma caminhada de mãos dadas",
+                "Assistam ao pôr do sol juntos",
+                "Dancem coladinhos",
+                "Façam uma noite de cinema em casa",
+                "Troquem elogios sinceros",
+                "Preparem uma refeição juntos",
+                "Tirem fotos divertidas juntos",
+                "Façam uma lista de motivos que amam um ao outro",
+                "Organizem um piquenique",
+                "Leiam um livro juntos",
+                "Façam uma playlist de músicas especiais",
+                "Criem um álbum de fotos",
+                "Escrevam bilhetinhos carinhosos",
+                "Façam uma sessão de cócegas",
+                "Contem segredos um ao outro",
+                "Compre flores como surpresa",
+                "Compre chocolates ou doces favoritos do(a) parceiro(a)",
+                "Deixe um bilhete carinhoso escondido para ele(a) encontrar",
+                "Prepare um banho relaxante com velas",
+                "Faça uma surpresa no trabalho dele(a)",
+                "Leve o café da manhã no trabalho dele(a)",
+                "Organize um encontro surpresa",
+                "Cozinhe a comida favorita dele(a)",
+                "Faça uma massagem nos pés",
+                "Lave a louça ou faça uma tarefa doméstica do(a) parceiro(a)",
+                "Deixe ele(a) escolher o filme ou série hoje",
+                "Prepare pipoca e assistam algo juntos no sofá",
+                "Deem um passeio de mãos dadas no parque",
+                "Comprem sorvete e comam juntos",
+                "Façam carinho na cabeça um do outro",
+                "Troquem massagens nos ombros por 10 minutos",
+                "Façam uma noite de jogos de tabuleiro juntos",
+                "Preparem um smoothie ou suco especial juntos",
+                "Cantem uma música juntos (mesmo que desafinados)",
+                "Façam uma sessão de alongamento ou yoga juntos",
+                "Escrevam objetivos e sonhos para este mês",
+                "Organizem um cantinho aconchegante da casa juntos",
+                "Façam uma videochamada com amigos ou família juntos",
+                "Preparem uma sobremesa favorita juntos",
+                "Assistam vídeos engraçados e riam juntos"
+            ],
+            amor: [
+                "Digam 'eu te amo' de 10 formas diferentes",
+                "Compartilhem seus sonhos para o futuro",
+                "Façam planos para uma viagem",
+                "Relembrem o primeiro encontro",
+                "Contem o que mais amam no outro",
+                "Escrevam votos de amor",
+                "Criem um apelido especial",
+                "Façam promessas de amor",
+                "Compartilhem memórias favoritas",
+                "Digam qualidades que admiram no outro",
+                "Planejem um encontro surpresa",
+                "Escrevam uma música juntos",
+                "Façam um desenho representando o amor de vocês",
+                "Criem um ritual especial só de vocês",
+                "Troquem presentes simbólicos",
+                "Façam um pacto de cumplicidade",
+                "Compartilhem seus medos",
+                "Apoiem os sonhos um do outro",
+                "Renovem seus votos de compromisso",
+                "Celebrem uma conquista juntos",
+                "Vão ao restaurante do primeiro encontro de vocês",
+                "Recriem o primeiro encontro de vocês",
+                "Voltem ao lugar onde se conheceram",
+                "Façam um jantar romântico à luz de velas em casa",
+                "Reservem um restaurante especial como surpresa",
+                "Planejem um fim de semana romântico juntos",
+                "Escrevam cartas um para o outro e leiam juntos",
+                "Assistam ao nascer do sol juntos",
+                "Façam um brinde ao amor de vocês",
+                "Troquem alianças ou anéis simbólicos",
+                "Tirem fotos profissionais juntos",
+                "Planejem como será o futuro de vocês daqui 5 anos",
+                "Contem a história de como se apaixonaram",
+                "Visitem um lugar especial da infância de um de vocês",
+                "Façam uma lista de 100 coisas para fazer juntos",
+                "Renovem suas promessas de amor para este ano",
+                "Digam o que mais os atrai um no outro fisicamente e emocionalmente",
+                "Compartilhem seus maiores arrependimentos e perdoem um ao outro",
+                "Planejem uma tradição especial que seja só de vocês",
+                "Escrevam uma linha do tempo dos momentos mais importantes",
+                "Digam como imaginam estar daqui a 20 anos",
+                "Façam votos de sempre priorizarem o relacionamento",
+                "Contem sobre família e o que significa para vocês",
+                "Celebrem o quanto evoluíram juntos como casal",
+                "Agradeçam pelos desafios superados juntos"
+            ],
+            // Desafios adaptados por gênero
+            sexo: {
+                male: [
+                    "Faça sexo oral em sua parceira",
+                    "Masturbe sua parceira com as mãos",
+                    "Chegue de repente e comece a masturbar ela sem falar nada",
+                    "Beije o corpo inteiro de sua parceira",
+                    "Faça uma massagem íntima em sua parceira",
+                    "Experimente uma nova posição sexual",
+                    "Dedique 20 minutos só nas preliminares",
+                    "Use seus dedos para estimular o clitóris dela",
+                    "Faça sexo focando no prazer dela primeiro",
+                    "Experimente usar a língua em diferentes partes do corpo dela",
+                    "Masturbe ela enquanto beija seus seios",
+                    "Faça sexo oral enquanto ela está fazendo outra coisa",
+                    "Chegue por trás e comece a tocar nela sem avisar",
+                    "Experimente estimular o ponto G dela",
+                    "Tente uma posição onde ela tenha mais controle",
+                    "Dedique tempo ao sexo oral sem pressa",
+                    "Use as mãos para estimular enquanto penetra",
+                    "Masturbe ela por trás enquanto abraça",
+                    "Faça preliminares mais longas que o normal",
+                    "Experimente diferentes ritmos e intensidades",
+                    "Foque em descobrir o que ela mais gosta",
+                    "Acorde ela fazendo sexo oral",
+                    "Use sua boca e dedos ao mesmo tempo nela",
+                    "Toque nela por baixo da roupa em público (discretamente)",
+                    "Tire a roupa dela devagar e provocante",
+                    "Sussurre coisas safadas no ouvido dela enquanto masturba",
+                    "Faça ela gozar só com os dedos",
+                    "Experimente diferentes técnicas de sexo oral",
+                    "Tente fazer ela ter múltiplos orgasmos",
+                    "Masturbe ela enquanto ela dirige (com segurança)",
+                    "Envie mensagens safadas durante o dia e cumpra à noite",
+                    "Faça preliminares em um lugar inusitado",
+                    "Estimule ela com brinquedos (se tiverem)",
+                    "Dedique uma sessão inteira só ao prazer oral dela",
+                    "Experimente sexo em um local diferente da casa",
+                    "Amarre as mãos dela e controle o prazer dela completamente",
+                    "Faça sexo oral até ela implorar para você parar",
+                    "Use sua língua e dedos juntos no clitóris dela",
+                    "Penetre devagar enquanto estimula o clitóris com os dedos",
+                    "Pratique sexo oral por pelo menos 15 minutos seguidos",
+                    "Explore todo o corpo dela com a língua antes do sexo",
+                    "Surpreenda ela no chuveiro e comece a tocar",
+                    "Peça para ela ficar de quatro e estimule por trás",
+                    "Faça ela gozar apenas com sexo oral",
+                    "Experimente fazer 69 com você por baixo",
+                    "Masturbe ela enquanto conta suas fantasias com ela",
+                    "Faça sexo em frente ao espelho para ela ver tudo",
+                    "Deixe ela no controle e obedeça tudo que ela pedir",
+                    "Alterne entre a língua e os dedos para aumentar o prazer",
+                    "Tente fazê-la gozar antes da penetração",
+                    "Experimente estimular ela usando apenas a respiração quente",
+                    "Massageie os seios dela durante as preliminares",
+                    "Beije e morda suavemente as coxas dela",
+                    "Faça sexo bem devagar, prolongando o prazer ao máximo",
+                    "Use gelo para estimular diferentes partes do corpo dela"
+                ],
+                female: [
+                    "Faça sexo oral em seu parceiro",
+                    "Masturbe seu parceiro com as mãos",
+                    "Masturbe seu parceiro usando os seios",
+                    "Masturbe seu parceiro usando os pés",
+                    "Chegue de repente e comece a masturbar ele sem falar nada",
+                    "Beije o corpo inteiro de seu parceiro",
+                    "Faça uma massagem íntima em seu parceiro",
+                    "Experimente uma nova posição sexual",
+                    "Dedique 20 minutos só nas preliminares",
+                    "Use suas mãos para estimular o pênis dele",
+                    "Tome a iniciativa e comece o sexo sem avisar",
+                    "Experimente usar a língua em diferentes partes do corpo dele",
+                    "Masturbe ele enquanto beija seu corpo",
+                    "Faça sexo oral enquanto ele está fazendo outra coisa",
+                    "Sente no colo dele e comece a se esfregar nele",
+                    "Experimente controlar o ritmo durante o sexo",
+                    "Tente uma posição onde você tenha mais controle",
+                    "Dedique tempo ao sexo oral sem pressa",
+                    "Use as mãos durante a penetração",
+                    "Masturbe ele por trás enquanto abraça",
+                    "Faça preliminares mais longas que o normal",
+                    "Experimente diferentes ritmos e intensidades",
+                    "Mostre o que você mais gosta",
+                    "Acorde ele fazendo sexo oral",
+                    "Use sua boca e mãos ao mesmo tempo",
+                    "Toque nele por baixo da roupa em público (discretamente)",
+                    "Tire a roupa dele devagar e provocante",
+                    "Sussurre coisas safadas no ouvido dele enquanto masturba",
+                    "Faça ele gozar só com as mãos",
+                    "Experimente diferentes posições de sexo oral",
+                    "Suba em cima dele e tome o controle completo",
+                    "Masturbe ele enquanto ele dirige (com segurança)",
+                    "Envie fotos sensuais durante o dia e cumpra à noite",
+                    "Faça strip-tease antes do sexo",
+                    "Sugira sexo em um local diferente da casa",
+                    "Amarre as mãos dele e tome controle total",
+                    "Faça sexo oral de joelhos mantendo contato visual",
+                    "Masturbe ele usando óleo ou lubrificante",
+                    "Dance sensualmente em cima dele até ele não aguentar",
+                    "Pratique sexo oral do início ao fim sem parar",
+                    "Use sua língua para explorar todo o corpo dele",
+                    "Surpreenda ele no chuveiro e comece a tocar",
+                    "Vista lingerie sexy e provoque antes de deixar tocar",
+                    "Faça ele gozar apenas com sexo oral",
+                    "Experimente fazer 69 com você por cima",
+                    "Masturbe ele enquanto conta suas fantasias",
+                    "Faça sexo em frente ao espelho para ele ver tudo",
+                    "Deixe ele filmar vocês transando (só se ambos concordarem)",
+                    "Pratique garganta profunda durante o sexo oral",
+                    "Alterne entre rápido e devagar para aumentar o prazer dele",
+                    "Experimente usar a língua em todo o comprimento",
+                    "Massageie os testículos dele durante o sexo oral",
+                    "Faça contato visual intenso enquanto chupa",
+                    "Use as mãos e a boca simultaneamente em ritmos diferentes",
+                    "Deixe ele gozar onde ele quiser (com seu consentimento)"
+                ],
+                other: [
+                    "Faça sexo oral em seu(sua) parceiro(a)",
+                    "Masturbe seu(sua) parceiro(a) com as mãos",
+                    "Chegue de repente e comece a masturbar sem falar nada",
+                    "Beije o corpo inteiro de seu(sua) parceiro(a)",
+                    "Faça uma massagem íntima em seu(sua) parceiro(a)",
+                    "Experimente uma nova posição sexual",
+                    "Dedique 20 minutos só nas preliminares",
+                    "Use suas mãos para estimular intimamente",
+                    "Tome a iniciativa e comece a intimidade sem avisar",
+                    "Experimente usar a língua em diferentes partes do corpo",
+                    "Combine masturbação com beijos pelo corpo",
+                    "Faça sexo oral de surpresa",
+                    "Chegue por trás e comece a tocar sem avisar",
+                    "Experimente controlar o ritmo",
+                    "Tente uma posição onde vocês tenham controle compartilhado",
+                    "Dedique tempo ao prazer oral sem pressa",
+                    "Use as mãos de forma criativa",
+                    "Masturbe por trás enquanto abraça",
+                    "Faça preliminares mais longas que o normal",
+                    "Experimente diferentes ritmos e intensidades",
+                    "Foque em dar o máximo de prazer",
+                    "Acorde fazendo sexo oral",
+                    "Use boca e mãos ao mesmo tempo",
+                    "Toque por baixo da roupa em público (discretamente)",
+                    "Tire a roupa devagar e provocante",
+                    "Sussurre coisas safadas enquanto masturba",
+                    "Dedique-se a fazer seu(sua) parceiro(a) gozar",
+                    "Experimente diferentes técnicas orais",
+                    "Compartilhem o que mais gostam",
+                    "Tente estimular enquanto dirige (com segurança)",
+                    "Envie mensagens safadas e cumpra à noite",
+                    "Faça preliminares em lugar inusitado",
+                    "Usem brinquedos juntos (se tiverem)",
+                    "Foquem no prazer mútuo intenso",
+                    "Experimentem intimidade em um local diferente",
+                    "Amarre e seja amarrado(a) em momentos diferentes",
+                    "Pratique sexo oral prolongado mantendo contato visual",
+                    "Use óleos ou lubrificantes para massagem íntima",
+                    "Dance sensualmente e provoque antes de começar",
+                    "Dediquem uma sessão inteira ao prazer oral mútuo",
+                    "Explorem todo o corpo com a língua",
+                    "Surpreendam um ao outro no chuveiro",
+                    "Experimentem posições onde possam ver tudo",
+                    "Pratiquem o 69 explorando diferentes ritmos",
+                    "Masturbem um ao outro enquanto contam fantasias",
+                    "Façam sexo em frente ao espelho",
+                    "Deixem um controlar completamente o prazer do outro",
+                    "Filmem vocês (só se ambos concordarem)",
+                    "Alternem entre rápido e devagar para aumentar prazer",
+                    "Tentem fazer o(a) parceiro(a) ter múltiplos orgasmos",
+                    "Experimentem posições que permitam contato visual constante",
+                    "Usem a respiração como forma de aumentar o prazer",
+                    "Massageiem pontos de prazer enquanto penetram",
+                    "Explorem zonas erógenas desconhecidas um do outro",
+                    "Façam uma sessão completa de tantra"
+                ]
+            }
+        };
+
+        // Estado do aplicativo
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let markedDates = JSON.parse(localStorage.getItem('markedDates')) || [];
+        let challengeStatus = {};
+        let completedChallenges = JSON.parse(localStorage.getItem('completedChallenges')) || [];
+        let userGender = localStorage.getItem('userGender') || null;
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+
+        // Função para migrar dados de versões anteriores
+        function migrateData() {
+            const savedVersion = localStorage.getItem('appVersion');
+            
+            // Se não tem versão salva ou é diferente da atual
+            if (!savedVersion || savedVersion !== APP_VERSION) {
+                console.log('Migrando dados da versão', savedVersion, 'para', APP_VERSION);
+                
+                // Dados que devem ser preservados:
+                // - markedDates (dias especiais no calendário)
+                // - completedChallenges (desafios completados)
+                // - userGender (gênero selecionado)
+                
+                // Verificar se existem dados antigos
+                const oldMarkedDates = localStorage.getItem('markedDates');
+                const oldCompletedChallenges = localStorage.getItem('completedChallenges');
+                const oldUserGender = localStorage.getItem('userGender');
+                
+                // Se existirem, eles já estão no localStorage e serão mantidos
+                // Apenas atualizamos a versão
+                localStorage.setItem('appVersion', APP_VERSION);
+                
+                // Resetar apenas o desafio do dia atual (para gerar novos desafios se houver novos)
+                // MAS manter o histórico de completados
+                const lastChallengeDate = localStorage.getItem('lastChallengeDate');
+                const today = new Date().toDateString();
+                
+                // Se for um novo dia, vai gerar novos desafios de qualquer forma
+                // Se for o mesmo dia, mantém os desafios atuais
+                
+                console.log('Migração concluída!');
+                console.log('Dias especiais preservados:', markedDates.length);
+                console.log('Desafios completados preservados:', completedChallenges.length);
+                console.log('Gênero preservado:', userGender);
+            }
+        }
+
+        // Executar migração ao carregar
+        migrateData();
+
+        // Seleção de gênero
+        function selectGender(gender) {
+            userGender = gender;
+            localStorage.setItem('userGender', gender);
+            updateGenderDisplay();
+            showMenu();
+        }
+
+        function updateGenderDisplay() {
+            const genderDisplay = document.getElementById('genderDisplay');
+            const genderEmojis = {
+                male: '👨',
+                female: '👩',
+                other: '🌈'
+            };
+            const genderLabels = {
+                male: 'Masculino',
+                female: 'Feminino',
+                other: 'Neutro'
+            };
+            
+            if (userGender) {
+                genderDisplay.textContent = `${genderEmojis[userGender]} ${genderLabels[userGender]}`;
+                genderDisplay.style.display = 'inline-block';
+            }
+        }
+
+        function showGenderScreen() {
+            showScreen('genderScreen');
+        }
+
+        // Obter desafios de sexo baseados no gênero
+        function getSexChallenges() {
+            if (!userGender) return challenges.sexo.other;
+            return challenges.sexo[userGender] || challenges.sexo.other;
+        }
+
+        // Função para obter desafio diário
+        function getDailyChallenge(forceNew = false) {
+            const today = new Date().toDateString();
+            const savedDate = localStorage.getItem('lastChallengeDate');
+            
+            let currentDailyChallenge;
+            
+            if (forceNew || savedDate !== today) {
+                const sexChallenges = getSexChallenges();
+                
+                currentDailyChallenge = {
+                    carinho: challenges.carinho[Math.floor(Math.random() * challenges.carinho.length)],
+                    amor: challenges.amor[Math.floor(Math.random() * challenges.amor.length)],
+                    sexo: sexChallenges[Math.floor(Math.random() * sexChallenges.length)]
+                };
+                
+                localStorage.setItem('lastChallengeDate', today);
+                localStorage.setItem('currentDailyChallenge', JSON.stringify(currentDailyChallenge));
+                
+                challengeStatus = {
+                    carinho: 'pending',
+                    amor: 'pending',
+                    sexo: 'pending',
+                    selected: null
+                };
+                localStorage.setItem('challengeStatus', JSON.stringify(challengeStatus));
+            } else {
+                currentDailyChallenge = JSON.parse(localStorage.getItem('currentDailyChallenge'));
+                challengeStatus = JSON.parse(localStorage.getItem('challengeStatus')) || {
+                    carinho: 'pending',
+                    amor: 'pending',
+                    sexo: 'pending',
+                    selected: null
+                };
+            }
+            
+            return currentDailyChallenge;
+        }
+
+        // Mostrar desafio diário
+        function showDailyChallenge() {
+            const challenge = getDailyChallenge();
+            
+            document.getElementById('carinhoText').textContent = challenge.carinho;
+            document.getElementById('amorText').textContent = challenge.amor;
+            document.getElementById('sexoText').textContent = challenge.sexo;
+            
+            updateChallengeStatus();
+            
+            const today = new Date();
+            const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            const dateStr = today.toLocaleDateString('pt-BR', options);
+            document.getElementById('dailyDate').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+            
+            showScreen('dailyScreen');
+        }
+
+        // Selecionar um desafio
+        function selectChallenge(category) {
+            if (challengeStatus[category] === 'completed') {
+                return;
+            }
+            
+            if (challengeStatus.selected === category) {
+                challengeStatus[category] = 'completed';
+                challengeStatus.selected = null;
+                
+                const completionData = {
+                    date: new Date().toISOString(),
+                    category: category,
+                    month: new Date().getMonth(),
+                    year: new Date().getFullYear()
+                };
+                completedChallenges.push(completionData);
+                localStorage.setItem('completedChallenges', JSON.stringify(completedChallenges));
+                
+                setTimeout(() => {
+                    alert('🎉 Parabéns! Desafio completado! Continue fortalecendo seu relacionamento! 💕');
+                }, 100);
+            } else {
+                challengeStatus.selected = category;
+            }
+            
+            localStorage.setItem('challengeStatus', JSON.stringify(challengeStatus));
+            updateChallengeStatus();
+        }
+
+        // Atualizar status visual dos desafios
+        function updateChallengeStatus() {
+            const categories = ['carinho', 'amor', 'sexo'];
+            
+            categories.forEach(cat => {
+                const card = document.getElementById(`${cat}Card`);
+                const status = document.getElementById(`${cat}Status`);
+                
+                card.classList.remove('selected', 'completed');
+                
+                if (challengeStatus[cat] === 'completed') {
+                    card.classList.add('completed');
+                    status.textContent = '✅ Completado!';
+                } else if (challengeStatus.selected === cat) {
+                    card.classList.add('selected');
+                    status.textContent = '👉 Clique novamente para completar';
+                } else {
+                    status.textContent = '👆 Clique para fazer este desafio';
+                }
+            });
+        }
+
+        // Novo desafio diário
+        function getNewDailyChallenge() {
+            if (confirm('Deseja gerar novos desafios? Os desafios atuais serão substituídos.')) {
+                getDailyChallenge(true);
+                showDailyChallenge();
+            }
+        }
+
+        // Mostrar todos os desafios
+        function showAllChallenges() {
+            showChallengeCategory('carinho', null);
+            showScreen('allChallengesScreen');
+        }
+
+        // Mostrar categoria de desafios
+        function showChallengeCategory(category, event) {
+            const icons = { carinho: '💝', amor: '❤️', sexo: '🔥' };
+            const titles = { carinho: 'Carinho', amor: 'Amor', sexo: 'Intimidade' };
+            const colors = { 
+                carinho: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+                amor: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                sexo: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
+            };
+            
+            let html = `<div class="challenge-card" style="background: ${colors[category]};">
+                <div class="challenge-icon">${icons[category]}</div>
+                <h3>Desafios de ${titles[category]}</h3>
+            </div>`;
+            
+            const categoryList = category === 'sexo' ? getSexChallenges() : challenges[category];
+            
+            categoryList.forEach((challenge, index) => {
+                html += `<div class="challenge-list-item">
+                    <strong>${index + 1}.</strong> ${challenge}
+                </div>`;
+            });
+            
+            document.getElementById('challengeList').innerHTML = html;
+            
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                document.querySelector('.category-btn').classList.add('active');
+            }
+        }
+
+        // Mostrar calendário
+        function showCalendar() {
+            renderCalendar();
+            showScreen('calendarScreen');
+        }
+
+        // Renderizar calendário
+        function renderCalendar() {
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                              'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+            
+            document.getElementById('calendarMonth').textContent = 
+                `${monthNames[currentMonth]} ${currentYear}`;
+            
+            let html = '';
+            const dayNames = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            dayNames.forEach(day => {
+                html += `<div class="calendar-header">${day}</div>`;
+            });
+            
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${currentMonth + 1}-${day}`;
+                const isMarked = markedDates.includes(dateStr);
+                html += `<div class="calendar-day ${isMarked ? 'marked' : ''}" 
+                         onclick="toggleDate('${dateStr}')">${day}</div>`;
+            }
+            
+            const totalCells = startingDayOfWeek + daysInMonth;
+            const cellsNeeded = Math.ceil(totalCells / 7) * 7;
+            const emptyCellsAfter = cellsNeeded - totalCells;
+            
+            for (let i = 0; i < emptyCellsAfter; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+            
+            document.getElementById('calendar').innerHTML = html;
+            updateCalendarStats();
+        }
+
+        // Marcar/desmarcar data
+        function toggleDate(dateStr) {
+            const index = markedDates.indexOf(dateStr);
+            if (index > -1) {
+                markedDates.splice(index, 1);
+            } else {
+                markedDates.push(dateStr);
+            }
+            localStorage.setItem('markedDates', JSON.stringify(markedDates));
+            renderCalendar();
+        }
+
+        // Atualizar estatísticas do calendário
+        function updateCalendarStats() {
+            const currentMonthDates = markedDates.filter(date => {
+                const [year, month] = date.split('-').map(Number);
+                return year === currentYear && month === currentMonth + 1;
+            });
+            document.getElementById('monthStats').textContent = currentMonthDates.length;
+        }
+
+        // Navegação do calendário
+        function previousMonth() {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        // Mostrar estatísticas
+        function showStatistics() {
+            updateAllStatistics();
+            showScreen('statisticsScreen');
+        }
+
+        // Atualizar todas as estatísticas
+        function updateAllStatistics() {
+            const now = new Date();
+            const currentYearNum = now.getFullYear();
+            const currentMonthNum = now.getMonth();
+            
+            const daysThisYear = markedDates.filter(date => {
+                const [year] = date.split('-').map(Number);
+                return year === currentYearNum;
+            }).length;
+            
+            document.getElementById('totalDaysYear').textContent = daysThisYear;
+            document.getElementById('totalDaysAll').textContent = markedDates.length;
+            
+            const challengesThisMonth = completedChallenges.filter(c => 
+                c.year === currentYearNum && c.month === currentMonthNum
+            ).length;
+            
+            const challengesThisYear = completedChallenges.filter(c => 
+                c.year === currentYearNum
+            ).length;
+            
+            document.getElementById('challengesMonth').textContent = challengesThisMonth;
+            document.getElementById('challengesYear').textContent = challengesThisYear;
+            document.getElementById('challengesTotal').textContent = completedChallenges.length;
+            
+            const carinhoCount = completedChallenges.filter(c => c.category === 'carinho').length;
+            const amorCount = completedChallenges.filter(c => c.category === 'amor').length;
+            const sexoCount = completedChallenges.filter(c => c.category === 'sexo').length;
+            
+            document.getElementById('carinhoTotal').textContent = carinhoCount;
+            document.getElementById('amorTotal').textContent = amorCount;
+            document.getElementById('sexoTotal').textContent = sexoCount;
+        }
+
+        // Navegação entre telas
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function showMenu() {
+            showScreen('menuScreen');
+            updateDarkModeButton();
+        }
+
+        // Inicialização
+        window.onload = function() {
+            // Aplicar modo escuro se estiver ativado
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            }
+            
+            if (userGender) {
+                updateGenderDisplay();
+                getDailyChallenge();
+                showMenu();
+            } else {
+                showScreen('genderScreen');
+            }
+        };
+
+        // Função para alternar modo escuro
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            localStorage.setItem('darkMode', isDarkMode);
+            
+            if (isDarkMode) {
+                document.body.classList.add('dark-mode');
+            } else {
+                document.body.classList.remove('dark-mode');
+            }
+            
+            // Atualizar texto do botão
+            updateDarkModeButton();
+        }
+
+        function updateDarkModeButton() {
+            const buttons = document.querySelectorAll('.menu-button.settings');
+            buttons.forEach(btn => {
+                if (btn.textContent.includes('Modo')) {
+                    btn.innerHTML = isDarkMode ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+                }
+            });
+        }
+    </script>
+
+<link rel="manifest" href="manifest.json">
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+</script>
+
+</body>
+</html>
