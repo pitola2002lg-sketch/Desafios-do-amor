@@ -567,6 +567,38 @@
                 font-size: 26px;
             }
         }
+
+
+        .search-input { width:100%; padding:14px 16px; border:1px solid #ddd; border-radius:14px; margin:0 0 16px; font-size:16px; outline:none; }
+        .search-input:focus { border-color:#764ba2; box-shadow:0 0 0 3px rgba(118,75,162,.12); }
+        .settings-panel h2 { color:#764ba2; margin-bottom:8px; }
+        .muted { color:#666; line-height:1.5; font-size:14px; }
+        .setting-card { background:#fff; border:1px solid rgba(118,75,162,.12); box-shadow:0 4px 18px rgba(0,0,0,.06); border-radius:16px; padding:18px; margin:16px 0; }
+        .button-row { display:flex; gap:10px; flex-wrap:wrap; }
+        .button-row .action-button { flex:1; min-width:130px; }
+        .toggle-line { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-top:1px solid #eee; }
+        .toggle-line input[type="checkbox"] { width:22px; height:22px; }
+        .toggle-line input[type="time"] { padding:8px; border-radius:10px; border:1px solid #ddd; }
+        .mini-status { margin-top:10px; font-size:12px; color:#666; }
+        .toast { position:fixed; left:50%; bottom:22px; transform:translate(-50%,20px); opacity:0; pointer-events:none; z-index:1000; background:#242424; color:#fff; padding:12px 18px; border-radius:999px; box-shadow:0 8px 30px rgba(0,0,0,.28); max-width:min(90vw,520px); text-align:center; transition:.25s ease; }
+        .toast.show { opacity:1; transform:translate(-50%,0); }
+        .update-banner { position:fixed; left:50%; top:16px; transform:translateX(-50%); z-index:1200; background:#fff; color:#333; padding:12px 14px; border-radius:14px; box-shadow:0 10px 40px rgba(0,0,0,.25); display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+        .update-banner[hidden] { display:none; }
+        .update-banner button { border:0; border-radius:10px; padding:8px 10px; cursor:pointer; background:#764ba2; color:#fff; }
+        body.dark-mode .setting-card, body.dark-mode .update-banner, body.dark-mode .search-input { background:#16213e; color:#eee; border-color:#283456; }
+        body.dark-mode .muted, body.dark-mode .mini-status { color:#bbb; }
+        body.dark-mode .toggle-line { border-color:#283456; }
+
+        @media (min-width: 850px) {
+            body { align-items:flex-start; padding:28px; }
+            .container { max-width:980px; max-height:none; min-height:calc(100vh - 56px); }
+            .content { padding:32px 42px; }
+            #menuScreen.active { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+            #menuScreen .menu-button { margin:0; min-height:78px; }
+            .stats-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            #dailyScreen.active { max-width:760px; margin:0 auto; }
+            #allChallengesScreen.active, #calendarScreen.active, #statisticsScreen.active, #settingsScreen.active { max-width:820px; margin:0 auto; }
+        }
     </style>
 </head>
 <body>
@@ -575,7 +607,7 @@
             <h1>💕 Desafios do Amor 💕</h1>
             <p>Fortaleça seu relacionamento com desafios diários</p>
             <div id="genderDisplay" class="current-gender" style="display: none;"></div>
-            <div style="font-size: 11px; opacity: 0.7; margin-top: 8px;">v2.0</div>
+            <div style="font-size: 11px; opacity: 0.7; margin-top: 8px;">v3.0</div>
         </div>
 
         <div class="content">
@@ -622,6 +654,9 @@
                 <button class="menu-button settings" onclick="toggleDarkMode()">
                     🌙 Modo Escuro
                 </button>
+                <button class="menu-button settings" onclick="showAppSettings()">
+                    🛡️ Dados, Backup e Notificações
+                </button>
             </div>
 
             <!-- Tela de Desafio Diário -->
@@ -666,6 +701,7 @@
                     <button class="category-btn" onclick="showChallengeCategory('sexo', event)">🔥 Intimidade</button>
                 </div>
 
+                <input id="challengeSearch" class="search-input" type="search" placeholder="🔎 Pesquisar desafios..." oninput="filterChallengeList()" aria-label="Pesquisar desafios">
                 <div id="challengeList"></div>
 
                 <div style="text-align: center; margin-top: 25px;">
@@ -732,6 +768,13 @@
                         <div class="stat-label">Total de desafios completados</div>
                     </div>
 
+                    <div class="stats-title" style="margin-top: 25px;">🔥 Sequência do casal</div>
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-number" id="currentStreak">0</div><div class="stat-label">Sequência atual</div></div>
+                        <div class="stat-card"><div class="stat-number" id="bestStreak">0</div><div class="stat-label">Melhor sequência</div></div>
+                    </div>
+                    <div class="stat-card full-width" style="margin-top: 12px;"><div class="stat-number" id="achievementLevel">🌱</div><div class="stat-label" id="achievementText">Começando juntos</div></div>
+
                     <div class="stats-title" style="margin-top: 25px;">💕 Por Categoria</div>
                     
                     <div class="stats-grid">
@@ -755,12 +798,55 @@
                     <button class="action-button" onclick="showMenu()">🏠 Voltar ao Menu</button>
                 </div>
             </div>
+
+            <div id="settingsScreen" class="screen">
+                <div class="settings-panel">
+                    <h2>🛡️ Dados e preferências</h2>
+                    <p class="muted">Proteja seu progresso, controle lembretes e mantenha o app atualizado.</p>
+
+                    <div class="setting-card">
+                        <strong>💾 Backup do progresso</strong>
+                        <p class="muted">Exporte um arquivo para guardar seus desafios, calendário e preferências.</p>
+                        <div class="button-row">
+                            <button class="action-button" onclick="exportBackup()">⬇️ Exportar</button>
+                            <button class="action-button" onclick="document.getElementById('backupFile').click()">⬆️ Restaurar</button>
+                        </div>
+                        <input id="backupFile" type="file" accept="application/json,.json" hidden onchange="importBackup(event)">
+                        <div id="backupInfo" class="mini-status"></div>
+                    </div>
+
+                    <div class="setting-card">
+                        <strong>🔔 Lembretes</strong>
+                        <p class="muted">O navegador precisa autorizar notificações. O texto é discreto para proteger sua privacidade.</p>
+                        <label class="toggle-line"><span>Ativar lembretes</span><input id="notificationEnabled" type="checkbox" onchange="toggleNotifications(this.checked)"></label>
+                        <label class="toggle-line"><span>Horário</span><input id="notificationTime" type="time" value="20:00" onchange="saveNotificationTime(this.value)"></label>
+                        <button class="action-button" onclick="testNotification()">🔔 Testar notificação</button>
+                        <div id="notificationStatus" class="mini-status"></div>
+                    </div>
+
+                    <div class="setting-card">
+                        <strong>📲 Aplicativo</strong>
+                        <p class="muted" id="connectionStatus">Verificando conexão...</p>
+                        <div class="button-row">
+                            <button id="installButton" class="action-button" onclick="installApp()" style="display:none">📲 Instalar</button>
+                            <button class="action-button" onclick="checkForUpdates(true)">🔄 Buscar atualização</button>
+                        </div>
+                        <div class="mini-status">Versão instalada: <strong>3.0</strong></div>
+                    </div>
+                </div>
+                <div style="text-align:center;margin-top:25px"><button class="action-button" onclick="showMenu()">🏠 Voltar ao Menu</button></div>
+            </div>
         </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <div id="updateBanner" class="update-banner" hidden>
+        <span>✨ Nova versão disponível.</span><button onclick="applyUpdate()">Atualizar agora</button><button onclick="dismissUpdate()">Depois</button>
     </div>
 
     <script>
         // Versão do app
-        const APP_VERSION = "2.0";
+        const APP_VERSION = "3.0";
         
         // Banco de desafios
         const challenges = {
@@ -1035,11 +1121,19 @@
         };
 
         // Estado do aplicativo
+        function safeJSONParse(value, fallback) {
+            if (!value) return fallback;
+            try { return JSON.parse(value); } catch (error) {
+                console.warn('Dado local corrompido ignorado:', error);
+                return fallback;
+            }
+        }
+
         let currentMonth = new Date().getMonth();
         let currentYear = new Date().getFullYear();
-        let markedDates = JSON.parse(localStorage.getItem('markedDates')) || [];
+        let markedDates = safeJSONParse(localStorage.getItem('markedDates'), []);
         let challengeStatus = {};
-        let completedChallenges = JSON.parse(localStorage.getItem('completedChallenges')) || [];
+        let completedChallenges = safeJSONParse(localStorage.getItem('completedChallenges'), []);
         let userGender = localStorage.getItem('userGender') || null;
         let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
@@ -1130,11 +1224,21 @@
             if (forceNew || savedDate !== today) {
                 const sexChallenges = getSexChallenges();
                 
-                currentDailyChallenge = {
-                    carinho: challenges.carinho[Math.floor(Math.random() * challenges.carinho.length)],
-                    amor: challenges.amor[Math.floor(Math.random() * challenges.amor.length)],
-                    sexo: sexChallenges[Math.floor(Math.random() * sexChallenges.length)]
+                const recent = safeJSONParse(localStorage.getItem('recentChallenges'), {carinho:[], amor:[], sexo:[]});
+                const pickSmart = (list, category) => {
+                    const blocked = new Set((recent[category] || []).slice(-7));
+                    const available = list.filter(item => !blocked.has(item));
+                    const pool = available.length ? available : list;
+                    const chosen = pool[Math.floor(Math.random() * pool.length)];
+                    recent[category] = [...(recent[category] || []), chosen].slice(-7);
+                    return chosen;
                 };
+                currentDailyChallenge = {
+                    carinho: pickSmart(challenges.carinho, 'carinho'),
+                    amor: pickSmart(challenges.amor, 'amor'),
+                    sexo: pickSmart(sexChallenges, 'sexo')
+                };
+                localStorage.setItem('recentChallenges', JSON.stringify(recent));
                 
                 localStorage.setItem('lastChallengeDate', today);
                 localStorage.setItem('currentDailyChallenge', JSON.stringify(currentDailyChallenge));
@@ -1147,8 +1251,8 @@
                 };
                 localStorage.setItem('challengeStatus', JSON.stringify(challengeStatus));
             } else {
-                currentDailyChallenge = JSON.parse(localStorage.getItem('currentDailyChallenge'));
-                challengeStatus = JSON.parse(localStorage.getItem('challengeStatus')) || {
+                currentDailyChallenge = safeJSONParse(localStorage.getItem('currentDailyChallenge'), null);
+                challengeStatus = safeJSONParse(localStorage.getItem('challengeStatus'), null) || {
                     carinho: 'pending',
                     amor: 'pending',
                     sexo: 'pending',
@@ -1197,7 +1301,7 @@
                 localStorage.setItem('completedChallenges', JSON.stringify(completedChallenges));
                 
                 setTimeout(() => {
-                    alert('🎉 Parabéns! Desafio completado! Continue fortalecendo seu relacionamento! 💕');
+                    showToast('🎉 Desafio completado! Continue fortalecendo seu relacionamento! 💕');
                 }, 100);
             } else {
                 challengeStatus.selected = category;
@@ -1459,12 +1563,182 @@
                 }
             });
         }
+
+
+        let currentChallengeCategory = 'carinho';
+        function filterChallengeList() {
+            const q = (document.getElementById('challengeSearch')?.value || '').trim().toLocaleLowerCase('pt-BR');
+            document.querySelectorAll('#challengeList .challenge-list-item').forEach(item => {
+                item.style.display = item.textContent.toLocaleLowerCase('pt-BR').includes(q) ? '' : 'none';
+            });
+        }
+
+        const originalShowChallengeCategory = showChallengeCategory;
+        showChallengeCategory = function(category, event) {
+            currentChallengeCategory = category;
+            originalShowChallengeCategory(category, event);
+            const search = document.getElementById('challengeSearch');
+            if (search) { search.value = ''; filterChallengeList(); }
+        };
+
+        function getDayKey(date = new Date()) {
+            const y = date.getFullYear();
+            const m = String(date.getMonth()+1).padStart(2,'0');
+            const d = String(date.getDate()).padStart(2,'0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function completedDayKeys() {
+            return [...new Set(completedChallenges.map(c => {
+                const d = new Date(c.date);
+                return Number.isNaN(d.getTime()) ? null : getDayKey(d);
+            }).filter(Boolean))].sort();
+        }
+
+        function calculateStreaks() {
+            const keys = completedDayKeys();
+            if (!keys.length) return {current:0,best:0};
+            const dayMs=86400000;
+            const nums=keys.map(k=>new Date(k+'T12:00:00').getTime());
+            let best=1, run=1;
+            for(let i=1;i<nums.length;i++){
+                if(Math.round((nums[i]-nums[i-1])/dayMs)===1) run++; else run=1;
+                best=Math.max(best,run);
+            }
+            let current=0;
+            let cursor=new Date(); cursor.setHours(12,0,0,0);
+            const set=new Set(keys);
+            if(!set.has(getDayKey(cursor))){ cursor.setDate(cursor.getDate()-1); }
+            while(set.has(getDayKey(cursor))){ current++; cursor.setDate(cursor.getDate()-1); }
+            return {current,best};
+        }
+
+        const originalUpdateAllStatistics = updateAllStatistics;
+        updateAllStatistics = function() {
+            originalUpdateAllStatistics();
+            const st = calculateStreaks();
+            document.getElementById('currentStreak').textContent = st.current;
+            document.getElementById('bestStreak').textContent = st.best;
+            const total = completedChallenges.length;
+            let emoji='🌱', text='Começando juntos';
+            if(total>=100){emoji='👑';text='Amor lendário — 100+ desafios';}
+            else if(total>=50){emoji='💎';text='Parceiros — 50 desafios';}
+            else if(total>=25){emoji='❤️';text='Apaixonados — 25 desafios';}
+            else if(total>=5){emoji='💕';text='Primeiros passos — 5 desafios';}
+            document.getElementById('achievementLevel').textContent=emoji;
+            document.getElementById('achievementText').textContent=text;
+        };
+
+        function showToast(message) {
+            const el=document.getElementById('toast'); if(!el) return;
+            el.textContent=message; el.classList.add('show');
+            clearTimeout(window.__toastTimer); window.__toastTimer=setTimeout(()=>el.classList.remove('show'),2600);
+        }
+
+        // IndexedDB funciona como cópia de segurança local mais robusta do estado principal.
+        const DB_NAME='DesafiosDoAmorDB', DB_VERSION=1, STORE='state';
+        function openDB(){ return new Promise((resolve,reject)=>{ const r=indexedDB.open(DB_NAME,DB_VERSION); r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains(STORE)) r.result.createObjectStore(STORE); }; r.onsuccess=()=>resolve(r.result); r.onerror=()=>reject(r.error); }); }
+        async function idbSet(key,value){ try{ const db=await openDB(); await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).put(value,key);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);}); db.close(); }catch(e){console.warn('IndexedDB indisponível',e);} }
+        async function idbGet(key){ try{ const db=await openDB(); const v=await new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly');const q=tx.objectStore(STORE).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});db.close();return v;}catch(e){return undefined;} }
+        function snapshotState(){ return {appVersion:APP_VERSION, markedDates, completedChallenges, userGender, darkMode:isDarkMode, lastChallengeDate:localStorage.getItem('lastChallengeDate'), currentDailyChallenge:safeJSONParse(localStorage.getItem('currentDailyChallenge'),null), challengeStatus:safeJSONParse(localStorage.getItem('challengeStatus'),null), notificationEnabled:localStorage.getItem('notificationEnabled')==='true', notificationTime:localStorage.getItem('notificationTime')||'20:00', savedAt:new Date().toISOString()}; }
+        async function persistSnapshot(){ await idbSet('latest', snapshotState()); }
+        function persistCore(){ localStorage.setItem('markedDates',JSON.stringify(markedDates)); localStorage.setItem('completedChallenges',JSON.stringify(completedChallenges)); if(userGender)localStorage.setItem('userGender',userGender); localStorage.setItem('darkMode',String(isDarkMode)); persistSnapshot(); }
+
+        async function recoverFromIndexedDB(){
+            const snap=await idbGet('latest');
+            if(!snap) { persistSnapshot(); return; }
+            if(!markedDates.length && Array.isArray(snap.markedDates)) markedDates=snap.markedDates;
+            if(!completedChallenges.length && Array.isArray(snap.completedChallenges)) completedChallenges=snap.completedChallenges;
+            if(!userGender && snap.userGender) userGender=snap.userGender;
+            persistCore();
+        }
+
+        function exportBackup(){
+            const data=JSON.stringify(snapshotState(),null,2);
+            const blob=new Blob([data],{type:'application/json'});
+            const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`desafios-do-amor-backup-${getDayKey()}.json`; a.click();
+            setTimeout(()=>URL.revokeObjectURL(a.href),1000); localStorage.setItem('lastBackupAt',new Date().toISOString()); updateSettingsUI(); showToast('💾 Backup exportado.');
+        }
+        async function importBackup(event){
+            const file=event.target.files?.[0]; if(!file)return;
+            try{
+                const data=JSON.parse(await file.text());
+                if(!Array.isArray(data.markedDates)||!Array.isArray(data.completedChallenges)) throw new Error('Formato inválido');
+                markedDates=data.markedDates; completedChallenges=data.completedChallenges; userGender=data.userGender||userGender; isDarkMode=!!data.darkMode;
+                localStorage.setItem('markedDates',JSON.stringify(markedDates)); localStorage.setItem('completedChallenges',JSON.stringify(completedChallenges));
+                if(userGender)localStorage.setItem('userGender',userGender); localStorage.setItem('darkMode',String(isDarkMode));
+                if(data.lastChallengeDate)localStorage.setItem('lastChallengeDate',data.lastChallengeDate); if(data.currentDailyChallenge)localStorage.setItem('currentDailyChallenge',JSON.stringify(data.currentDailyChallenge)); if(data.challengeStatus)localStorage.setItem('challengeStatus',JSON.stringify(data.challengeStatus));
+                document.body.classList.toggle('dark-mode',isDarkMode); await persistSnapshot(); updateGenderDisplay(); showToast('✅ Backup restaurado com sucesso.'); showMenu();
+            }catch(e){ showToast('❌ Backup inválido ou corrompido.'); }
+            event.target.value='';
+        }
+
+        function showAppSettings(){ updateSettingsUI(); showScreen('settingsScreen'); }
+        function updateSettingsUI(){
+            const enabled=localStorage.getItem('notificationEnabled')==='true'; const time=localStorage.getItem('notificationTime')||'20:00';
+            const e=document.getElementById('notificationEnabled'), t=document.getElementById('notificationTime'); if(e)e.checked=enabled;if(t)t.value=time;
+            const ns=document.getElementById('notificationStatus'); if(ns) ns.textContent=('Notification' in window)?`Permissão: ${Notification.permission}`:'Notificações não suportadas neste navegador.';
+            const bi=document.getElementById('backupInfo'), lb=localStorage.getItem('lastBackupAt'); if(bi)bi.textContent=lb?`Último backup: ${new Date(lb).toLocaleString('pt-BR')}`:'Nenhum backup exportado ainda.';
+            updateConnectionStatus();
+        }
+        async function toggleNotifications(enabled){
+            if(enabled){ if(!('Notification' in window)){showToast('Notificações não são suportadas.');return;} const p=await Notification.requestPermission(); if(p!=='granted'){document.getElementById('notificationEnabled').checked=false;localStorage.setItem('notificationEnabled','false');updateSettingsUI();return;} }
+            localStorage.setItem('notificationEnabled',String(enabled)); updateSettingsUI(); showToast(enabled?'🔔 Lembretes ativados.':'🔕 Lembretes desativados.'); persistSnapshot();
+        }
+        function saveNotificationTime(value){ localStorage.setItem('notificationTime',value||'20:00'); localStorage.removeItem('lastReminderDate'); persistSnapshot(); showToast('⏰ Horário salvo.'); }
+        async function sendPrivateNotification(){
+            const options={body:'Há um novo desafio esperando por vocês 💕',icon:'icon-192.png',badge:'icon-192.png',tag:'daily-love-reminder',renotify:false};
+            const reg=await navigator.serviceWorker?.ready.catch(()=>null); if(reg) reg.showNotification('Desafios do Amor',options); else new Notification('Desafios do Amor',options);
+        }
+        async function testNotification(){ if(Notification.permission!=='granted'){await toggleNotifications(true);} if(Notification.permission==='granted'){await sendPrivateNotification();showToast('🔔 Notificação enviada.');} }
+        function checkReminder(){
+            if(localStorage.getItem('notificationEnabled')!=='true'||!('Notification' in window)||Notification.permission!=='granted')return;
+            const [h,m]=(localStorage.getItem('notificationTime')||'20:00').split(':').map(Number); const now=new Date(); const due=now.getHours()>h||(now.getHours()===h&&now.getMinutes()>=m); const key=getDayKey(now);
+            if(due&&localStorage.getItem('lastReminderDate')!==key){ sendPrivateNotification(); localStorage.setItem('lastReminderDate',key); }
+        }
+        setInterval(checkReminder,60000);
+
+        function updateConnectionStatus(){ const el=document.getElementById('connectionStatus'); if(el) el.textContent=navigator.onLine?'🟢 Online — sincronização de atualização disponível.':'🟠 Offline — o app continua funcionando com o conteúdo em cache.'; }
+        window.addEventListener('online',()=>{updateConnectionStatus();checkForUpdates(false)}); window.addEventListener('offline',updateConnectionStatus);
+
+        let deferredInstallPrompt=null, waitingWorker=null;
+        window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstallPrompt=e;const b=document.getElementById('installButton');if(b)b.style.display='inline-block';});
+        async function installApp(){ if(!deferredInstallPrompt){showToast('O navegador ainda não liberou a instalação.');return;} deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt=null; document.getElementById('installButton').style.display='none'; }
+        async function checkForUpdates(manual=false){ try{ const reg=await navigator.serviceWorker?.getRegistration(); if(!reg){if(manual)showToast('Service Worker ainda não registrado.');return;} await reg.update(); if(reg.waiting){ waitingWorker=reg.waiting; document.getElementById('updateBanner').hidden=false; } else if(manual) showToast('✅ Você já está na versão mais recente.'); }catch(e){if(manual)showToast('Não foi possível verificar atualizações.');} }
+        function applyUpdate(){ if(waitingWorker) waitingWorker.postMessage({type:'SKIP_WAITING'}); }
+        function dismissUpdate(){ document.getElementById('updateBanner').hidden=true; }
+        navigator.serviceWorker?.addEventListener('controllerchange',()=>location.reload());
+
+        // Mantém a cópia robusta sincronizada após ações que alteram progresso.
+        const _selectChallenge=selectChallenge; selectChallenge=function(category){
+            _selectChallenge(category);
+            if (challengeStatus.carinho==='completed' && challengeStatus.amor==='completed' && challengeStatus.sexo==='completed') {
+                const now=new Date(); const calendarKey=`${now.getFullYear()}-${now.getMonth()+1}-${now.getDate()}`;
+                if(!markedDates.includes(calendarKey)) markedDates.push(calendarKey);
+            }
+            persistCore();
+        };
+        const _toggleDate=toggleDate; toggleDate=function(dateStr){_toggleDate(dateStr);persistCore();};
+        const _selectGender=selectGender; selectGender=function(gender){_selectGender(gender);localStorage.removeItem('lastChallengeDate');persistCore();};
+        const _toggleDarkMode=toggleDarkMode; toggleDarkMode=function(){_toggleDarkMode();persistCore();};
+        const _getNewDailyChallenge=getNewDailyChallenge; getNewDailyChallenge=function(){_getNewDailyChallenge();persistSnapshot();};
+
+        const legacyOnload=window.onload;
+        window.onload=async function(){ await recoverFromIndexedDB(); legacyOnload?.(); updateSettingsUI(); checkReminder(); setTimeout(()=>checkForUpdates(false),1500); };
     </script>
 
 <link rel="manifest" href="manifest.json">
 <script>
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
+  navigator.serviceWorker.register("sw.js").then(reg => {
+    if (reg.waiting) { waitingWorker = reg.waiting; document.getElementById('updateBanner').hidden = false; }
+    reg.addEventListener('updatefound', () => {
+      const worker = reg.installing;
+      worker?.addEventListener('statechange', () => {
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) { waitingWorker = worker; document.getElementById('updateBanner').hidden = false; }
+      });
+    });
+  }).catch(err => console.warn('Falha ao registrar service worker', err));
 }
 </script>
 
