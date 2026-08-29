@@ -1,7 +1,7 @@
 {
   "name": "Desafios do Amor",
   "short_name": "Desafios",
-  "description": "Fortaleça seu relacionamento com desafios diários de carinho, amor e intimidade.",
+  "description": "Fortaleça o relacionamento com desafios diários, metas, memórias e consentimento.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -30,7 +30,7 @@
     {
       "name": "Desafio do Dia",
       "short_name": "Hoje",
-      "url": "./index.html#daily",
+      "url": "./index.html#today",
       "icons": [
         {
           "src": "icon-192.png",
