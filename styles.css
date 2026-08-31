@@ -36,6 +36,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .skip-link { position: fixed; top: 8px; left: 8px; z-index: 3000; padding: 10px 14px; border-radius: 10px; background: var(--text); color: var(--surface); transform: translateY(-150%); }
 .skip-link:focus { transform: translateY(0); }
 
+.splash-screen { position: fixed; inset: 0; z-index: 5000; display: grid; place-content: center; justify-items: center; gap: 10px; padding: 24px; background: radial-gradient(circle at 50% 35%, #8d1ba3, #2d075c 58%, #13032e); color: #fff; text-align: center; transition: opacity .35s ease, visibility .35s ease; }
+.splash-screen img { width: 124px; height: 124px; border-radius: 30px; box-shadow: 0 18px 50px rgba(0,0,0,.36); }
+.splash-screen strong { margin-top: 8px; font-size: 1.5rem; }
+.splash-screen span { opacity: .82; font-size: .9rem; }
+.splash-screen.done { opacity: 0; visibility: hidden; pointer-events: none; }
+
 .app-shell { width: min(100%, 1040px); min-height: 100dvh; margin: 0 auto; background: color-mix(in srgb, var(--surface) 96%, transparent); box-shadow: var(--shadow); }
 .app-header {
     position: sticky;
@@ -51,6 +57,8 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
     color: #fff;
     box-shadow: 0 7px 28px rgba(110, 45, 80, .2);
 }
+.header-logo { flex: 0 0 auto; width: 56px; height: 56px; border: 2px solid rgba(255,255,255,.42); border-radius: 16px; box-shadow: 0 8px 22px rgba(63,9,79,.28); }
+.header-copy { min-width: 0; flex: 1; }
 .app-header h1 { margin: 1px 0; font-size: clamp(1.35rem, 5vw, 2rem); line-height: 1.15; }
 .header-subtitle { margin: 3px 0 0; opacity: .9; font-size: .9rem; }
 .eyebrow { margin: 0; font-size: .7rem; font-weight: 900; letter-spacing: .14em; opacity: .78; }
@@ -138,6 +146,16 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .goal-card p { margin: 2px 0; color: var(--muted); }
 .progress-track { height: 10px; overflow: hidden; border-radius: 999px; background: var(--border); }
 .progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--secondary)); transition: width .35s ease; }
+.relationship-card, .checkin-card { margin: 18px 0; padding: clamp(18px, 4vw, 26px); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); box-shadow: 0 9px 30px rgba(85,45,68,.08); }
+.relationship-card { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px; }
+.relationship-card > div { display: flex; align-items: center; gap: 13px; }
+.relationship-card > div > span { font-size: 2rem; }
+.relationship-card p { margin: 2px 0 0; color: var(--muted); }
+.checkin-card h3 { margin: 4px 0; }
+.mood-buttons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin: 17px 0; }
+.mood-buttons button { min-height: 52px; border: 1px solid var(--border); border-radius: 15px; background: var(--surface-soft); font-size: 1.65rem; cursor: pointer; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
+.mood-buttons button:hover { transform: translateY(-2px); }
+.mood-buttons button.selected { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, var(--surface)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent); }
 
 .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 18px; }
 .section-heading h2 { font-size: clamp(1.55rem, 5vw, 2.1rem); }
@@ -150,6 +168,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .daily-card.completed { filter: saturate(.65); }
 .daily-card h3 { margin: 5px 0; }
 .daily-card p { margin: 8px 0 18px; font-size: 1rem; }
+.discreet-mode .sensitive-text:not(.revealed) { filter: blur(7px); user-select: none; }
 .daily-card .card-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .daily-card button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(255,255,255,.4); border-radius: 12px; background: rgba(255,255,255,.18); color: #fff; font-weight: 800; cursor: pointer; }
 .daily-card button.primary-card-action { background: #fff; color: #98355e; }
@@ -208,6 +227,12 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .update-banner button { min-height: 38px; border: 0; border-radius: 10px; padding: 7px 11px; background: #fff; color: #7f3154; font-weight: 800; cursor: pointer; }
 .install-help { margin-top: 15px; color: var(--muted); }
 .install-help summary { color: var(--secondary); font-weight: 800; cursor: pointer; }
+.surprise-dialog { width: min(92vw, 520px); border: 1px solid var(--border); border-radius: 26px; padding: 28px; background: var(--surface); color: var(--text); box-shadow: 0 28px 90px rgba(27,4,38,.45); text-align: center; }
+.surprise-dialog::backdrop { background: rgba(23,4,31,.68); backdrop-filter: blur(5px); }
+.surprise-dialog > img { width: 84px; height: 84px; margin-bottom: 10px; border-radius: 22px; }
+.surprise-dialog h2 { margin: 5px 0 8px; }
+.surprise-dialog > p:not(.eyebrow) { margin: 12px 0 22px; font-size: 1.05rem; }
+.dialog-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 40px; height: 40px; border: 0; border-radius: 50%; background: var(--surface-soft); color: var(--text); font-size: 1.5rem; cursor: pointer; }
 
 body.dark-mode {
     color-scheme: dark;
@@ -229,7 +254,7 @@ body.dark-mode .celebration-card { background: #40381f; border-color: #7a6b2f; }
 @media (min-width: 720px) {
     .two-columns { grid-template-columns: repeat(2, 1fr); }
     .quick-grid { grid-template-columns: repeat(4, 1fr); }
-    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    .stats-grid { grid-template-columns: repeat(3, 1fr); }
     .toast { bottom: 24px; }
 }
 @media (min-width: 1050px) {
@@ -240,6 +265,7 @@ body.dark-mode .celebration-card { background: #40381f; border-color: #7a6b2f; }
 @media (max-width: 520px) {
     .app-header { min-height: 80px; }
     .header-subtitle { display: none; }
+    .header-logo { width: 48px; height: 48px; border-radius: 14px; }
     .app-content { padding-right: 16px; padding-left: 16px; }
     .hero-card { grid-template-columns: 1fr; }
     .progress-ring { width: 78px; }

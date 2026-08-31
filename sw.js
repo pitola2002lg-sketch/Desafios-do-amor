@@ -1,7 +1,8 @@
 const CACHE_PREFIX = 'desafios-do-amor-';
-const CACHE_NAME = `${CACHE_PREFIX}v3.1.0`;
+const CACHE_NAME = `${CACHE_PREFIX}v3.2.0`;
 const APP_SHELL = [
     './', './index.html', './styles.css', './manifest.json', './icon-192.png', './icon-512.png',
+    './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png',
     './js/app.js', './js/challenges.js', './js/storage.js', './js/notifications.js', './js/ui.js'
 ];
 

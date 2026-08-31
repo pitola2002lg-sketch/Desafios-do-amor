@@ -3,20 +3,27 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#f5576c">
+    <meta name="theme-color" content="#7b1fa2">
     <meta name="description" content="Desafios diários para fortalecer o relacionamento com carinho, diálogo e consentimento.">
     <title>Desafios do Amor</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <a class="skip-link" href="#mainContent">Pular para o conteúdo</a>
+    <div id="splashScreen" class="splash-screen" aria-label="Carregando Desafios do Amor">
+        <img src="icon-192.png" alt="">
+        <strong>Desafios do Amor</strong>
+        <span>Preparando um momento especial…</span>
+    </div>
     <div class="app-shell">
         <header class="app-header">
-            <div>
+            <img class="header-logo" src="icon-192.png" alt="Logo Desafios do Amor">
+            <div class="header-copy">
                 <p class="eyebrow">DESAFIOS DO AMOR</p>
-                <h1 id="headerTitle">💕 Nosso momento</h1>
+                <h1 id="headerTitle">Nosso momento</h1>
                 <p id="coupleGreeting" class="header-subtitle">Um pequeno gesto pode mudar o dia.</p>
             </div>
             <button id="themeButton" class="icon-button" type="button" data-action="toggle-theme" aria-label="Ativar modo escuro">🌙</button>
@@ -56,6 +63,18 @@
                     <button class="quick-card" type="button" data-screen="historyScreen"><span>🕘</span><strong>Histórico</strong><small>Momentos concluídos</small></button>
                 </div>
                 <div class="goal-card"><div><strong>Meta da semana</strong><p id="weeklyGoalText">0 de 5 desafios</p></div><div class="progress-track" aria-hidden="true"><span id="weeklyGoalBar"></span></div></div>
+                <div class="relationship-card">
+                    <div><span aria-hidden="true">💞</span><div><strong id="relationshipDays">Nossa história</strong><p id="relationshipSince">Adicione a data do relacionamento nos ajustes.</p></div></div>
+                    <button class="secondary-button compact" type="button" data-action="surprise-now">Surpresa para agora</button>
+                </div>
+                <div class="checkin-card">
+                    <div><p class="eyebrow">CHECK-IN DO CASAL</p><h3>Como vocês estão hoje?</h3><p class="muted">Um registro rápido ajuda a acompanhar a conexão de vocês.</p></div>
+                    <div id="moodButtons" class="mood-buttons" role="radiogroup" aria-label="Humor do casal">
+                        <button type="button" data-mood="1" aria-label="Muito difícil">😔</button><button type="button" data-mood="2" aria-label="Difícil">😕</button><button type="button" data-mood="3" aria-label="Tudo bem">😐</button><button type="button" data-mood="4" aria-label="Bem">🙂</button><button type="button" data-mood="5" aria-label="Muito bem">😍</button>
+                    </div>
+                    <label class="field"><span>Uma nota sobre o dia (opcional)</span><textarea id="checkInNote" maxlength="300" rows="2" placeholder="O que tornou o dia especial?"></textarea></label>
+                    <button class="primary-button" type="button" data-action="save-checkin">Salvar check-in</button>
+                </div>
             </section>
 
             <section id="todayScreen" class="screen" aria-labelledby="todayTitle">
@@ -82,7 +101,7 @@
             <section id="statsScreen" class="screen" aria-labelledby="statsTitle">
                 <div class="section-heading"><div><p class="eyebrow">EVOLUÇÃO</p><h2 id="statsTitle" tabindex="-1">Conquistas do casal</h2></div></div>
                 <div id="achievementCard" class="achievement-card"><span id="achievementEmoji">🌱</span><div><strong id="achievementName">Começando juntos</strong><p id="achievementHint"></p></div></div>
-                <div class="stats-grid"><article class="stat-card"><strong id="totalChallenges">0</strong><span>conclusões registradas</span></article><article class="stat-card"><strong id="currentStreak">0</strong><span>sequência atual</span></article><article class="stat-card"><strong id="bestStreak">0</strong><span>melhor sequência</span></article><article class="stat-card"><strong id="specialDays">0</strong><span>dias especiais</span></article></div>
+                <div class="stats-grid"><article class="stat-card"><strong id="totalChallenges">0</strong><span>conclusões registradas</span></article><article class="stat-card"><strong id="currentStreak">0</strong><span>sequência atual</span></article><article class="stat-card"><strong id="bestStreak">0</strong><span>melhor sequência</span></article><article class="stat-card"><strong id="specialDays">0</strong><span>dias especiais</span></article><article class="stat-card"><strong id="activeDays30">0</strong><span>dias ativos em 30 dias</span></article><article class="stat-card"><strong id="averageMood">—</strong><span>humor médio do casal</span></article></div>
                 <div class="form-card"><h3>Por categoria</h3><div id="categoryStats" class="category-stats"></div></div>
                 <div class="form-card"><h3>Meta semanal</h3><label class="field"><span>Quantidade de desafios</span><input id="weeklyGoalInput" type="number" min="1" max="21" inputmode="numeric"></label><button class="secondary-button" type="button" data-action="save-weekly-goal">Salvar meta</button></div>
             </section>
@@ -95,13 +114,13 @@
 
             <section id="settingsScreen" class="screen" aria-labelledby="settingsTitle">
                 <div class="section-heading"><div><p class="eyebrow">PREFERÊNCIAS</p><h2 id="settingsTitle" tabindex="-1">Configurações</h2></div></div>
-                <form id="profileForm" class="form-card"><h3>Perfil do casal</h3><div class="field-grid two-columns"><label class="field"><span>Seu nome</span><input id="profilePerson1" maxlength="40" required></label><label class="field"><span>Nome do seu amor</span><input id="profilePerson2" maxlength="40" required></label></div><label class="field"><span>Perfil dos desafios íntimos</span><select id="profileGender"><option value="other">Neutro</option><option value="male">Masculino</option><option value="female">Feminino</option></select></label><label class="switch-row"><span><strong>Desafios de intimidade</strong><small>Exige maioridade e consentimento.</small></span><input id="profileIntimacy" type="checkbox"></label><div id="profileAdultOptions" class="adult-options"><label class="field"><span>Intensidade</span><select id="profileIntensity"><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="intensa">Intensa</option></select></label><label class="check-row"><input id="profileAge" type="checkbox"><span>Somos maiores de 18 anos.</span></label></div><label class="check-row"><input id="profileConsent" type="checkbox" required><span>Continuamos de acordo com os limites e o consentimento mútuo.</span></label><p id="profileError" class="form-error" role="alert"></p><button class="primary-button" type="submit">Salvar perfil</button></form>
+                <form id="profileForm" class="form-card"><h3>Perfil do casal</h3><div class="field-grid two-columns"><label class="field"><span>Seu nome</span><input id="profilePerson1" maxlength="40" required></label><label class="field"><span>Nome do seu amor</span><input id="profilePerson2" maxlength="40" required></label></div><label class="field"><span>Data do início do relacionamento</span><input id="profileAnniversary" type="date"></label><label class="field"><span>Perfil dos desafios íntimos</span><select id="profileGender"><option value="other">Neutro</option><option value="male">Masculino</option><option value="female">Feminino</option></select></label><label class="switch-row"><span><strong>Desafios de intimidade</strong><small>Exige maioridade e consentimento.</small></span><input id="profileIntimacy" type="checkbox"></label><div id="profileAdultOptions" class="adult-options"><label class="field"><span>Intensidade</span><select id="profileIntensity"><option value="leve">Leve</option><option value="moderada">Moderada</option><option value="intensa">Intensa</option></select></label><label class="check-row"><input id="profileAge" type="checkbox"><span>Somos maiores de 18 anos.</span></label></div><label class="check-row"><input id="profileConsent" type="checkbox" required><span>Continuamos de acordo com os limites e o consentimento mútuo.</span></label><p id="profileError" class="form-error" role="alert"></p><button class="primary-button" type="submit">Salvar perfil</button></form>
 
                 <div class="form-card"><h3>Lembretes inteligentes</h3><p class="muted">O texto considera os desafios pendentes. Em um PWA offline, o horário é verificado quando o app está aberto ou volta a ficar ativo.</p><label class="switch-row"><span><strong>Ativar lembretes</strong><small id="notificationStatus">Verificando suporte…</small></span><input id="notificationEnabled" type="checkbox"></label><label class="field"><span>Horário</span><input id="notificationTime" type="time" value="20:00"></label><button class="secondary-button" type="button" data-action="test-notification">Testar lembrete</button></div>
 
-                <div class="form-card"><h3>Dados e privacidade</h3><p class="muted">O progresso fica localmente neste aparelho. O arquivo de backup contém informações do casal; guarde-o em local privado.</p><div class="button-row"><button class="secondary-button" type="button" data-action="export-backup">Exportar backup</button><button class="secondary-button" type="button" data-action="choose-backup">Restaurar backup</button></div><input id="backupFile" type="file" accept="application/json,.json" hidden><small id="backupStatus" class="status-text">Nenhum backup exportado nesta versão.</small></div>
+                <div class="form-card"><h3>Dados e privacidade</h3><p class="muted">O progresso fica localmente neste aparelho. O arquivo de backup contém informações do casal; guarde-o em local privado.</p><label class="switch-row"><span><strong>Modo discreto</strong><small>Oculta os textos íntimos até vocês tocarem para revelar.</small></span><input id="discreetMode" type="checkbox"></label><div class="button-row"><button class="secondary-button" type="button" data-action="export-backup">Exportar backup</button><button class="secondary-button" type="button" data-action="choose-backup">Restaurar backup</button></div><input id="backupFile" type="file" accept="application/json,.json" hidden><small id="backupStatus" class="status-text">Nenhum backup exportado nesta versão.</small></div>
 
-                <div class="form-card"><h3>Aplicativo</h3><p id="connectionStatus" class="status-text">Verificando conexão…</p><p class="status-text">Versão instalada: <strong>3.1.0</strong></p><div class="button-row"><button id="installButton" class="primary-button" type="button" data-action="install-app" hidden>Instalar aplicativo</button><button class="secondary-button" type="button" data-action="check-update">Buscar atualização</button></div><details class="install-help"><summary>Como instalar no celular</summary><p><strong>Android:</strong> abra pelo Chrome ou Edge, toque no menu e escolha “Instalar aplicativo”.</p><p><strong>iPhone:</strong> abra pelo Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”.</p></details></div>
+                <div class="form-card"><h3>Aplicativo</h3><p id="connectionStatus" class="status-text">Verificando conexão…</p><p class="status-text">Versão instalada: <strong>3.2.0</strong></p><div class="button-row"><button id="installButton" class="primary-button" type="button" data-action="install-app" hidden>Instalar aplicativo</button><button class="secondary-button" type="button" data-action="check-update">Buscar atualização</button></div><details class="install-help"><summary>Como instalar no celular</summary><p><strong>Android:</strong> abra pelo Chrome ou Edge, toque no menu e escolha “Instalar aplicativo”.</p><p><strong>iPhone:</strong> abra pelo Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”.</p></details></div>
             </section>
         </main>
 
@@ -109,6 +128,7 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <dialog id="surpriseDialog" class="surprise-dialog"><button class="dialog-close" type="button" data-action="close-surprise" aria-label="Fechar">×</button><img src="icon-192.png" alt=""><p class="eyebrow">SURPRESA PARA AGORA</p><h2 id="surpriseCategory">Um desafio especial</h2><p id="surpriseText"></p><div class="button-row"><button class="primary-button" type="button" data-action="complete-surprise">Concluir</button><button class="secondary-button" type="button" data-action="favorite-surprise">Favoritar</button><button class="secondary-button" type="button" data-action="share-surprise">Compartilhar</button></div></dialog>
     <div id="updateBanner" class="update-banner" hidden role="status"><span>✨ Nova versão disponível.</span><button type="button" data-action="apply-update">Atualizar agora</button><button type="button" data-action="dismiss-update">Depois</button></div>
     <script defer src="js/challenges.js"></script>
     <script defer src="js/storage.js"></script>

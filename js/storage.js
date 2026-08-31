@@ -1,5 +1,5 @@
 (() => {
-const APP_VERSION = '3.1.0';
+const APP_VERSION = '3.2.0';
 const STATE_KEY = 'desafiosDoAmorState';
 const DB_NAME = 'DesafiosDoAmorDB';
 const DB_VERSION = 2;
@@ -11,11 +11,12 @@ const todayKey = () => {
 };
 
 const createDefaultState = () => ({
-    schemaVersion: 2,
+    schemaVersion: 3,
     appVersion: APP_VERSION,
     profile: {
         person1: '',
         person2: '',
+        anniversary: '',
         gender: 'other',
         ageConfirmed: false,
         consentAccepted: false,
@@ -29,8 +30,11 @@ const createDefaultState = () => ({
     markedDates: [],
     favorites: [],
     customChallenges: [],
+    checkIns: [],
+    surpriseRecent: [],
     settings: {
         darkMode: false,
+        discreetMode: false,
         notificationsEnabled: false,
         notificationTime: '20:00',
         weeklyGoal: 5,
@@ -89,6 +93,7 @@ function normalizeState(raw) {
     base.profile = {
         person1: cleanText(profile.person1, 40),
         person2: cleanText(profile.person2, 40),
+        anniversary: normalizeDateKey(profile.anniversary),
         gender: ['male', 'female', 'other'].includes(profile.gender) ? profile.gender : 'other',
         ageConfirmed: profile.ageConfirmed === true,
         consentAccepted: profile.consentAccepted === true,
@@ -125,8 +130,17 @@ function normalizeState(raw) {
             createdAt: cleanText(item.createdAt, 40) || new Date().toISOString()
         };
     }).filter(Boolean).slice(-300);
+    base.checkIns = (Array.isArray(raw.checkIns) ? raw.checkIns : []).map(item => {
+        if (!item || typeof item !== 'object') return null;
+        const dateKey = normalizeDateKey(item.dateKey);
+        const mood = Number.parseInt(item.mood, 10);
+        if (!dateKey || !Number.isInteger(mood) || mood < 1 || mood > 5) return null;
+        return { dateKey, mood, note: cleanText(item.note, 300), updatedAt: cleanText(item.updatedAt, 40) || new Date().toISOString() };
+    }).filter(Boolean).slice(-730);
+    base.surpriseRecent = (Array.isArray(raw.surpriseRecent) ? raw.surpriseRecent : []).filter(value => typeof value === 'string').map(value => cleanText(value, 400)).filter(Boolean).slice(-12);
     base.settings = {
         darkMode: settings.darkMode === true,
+        discreetMode: settings.discreetMode === true,
         notificationsEnabled: settings.notificationsEnabled === true,
         notificationTime: validTime(settings.notificationTime),
         weeklyGoal: Math.min(21, Math.max(1, Number.parseInt(settings.weeklyGoal, 10) || 5)),
@@ -136,7 +150,7 @@ function normalizeState(raw) {
     base.lastUndo = raw.lastUndo && typeof raw.lastUndo === 'object' ? raw.lastUndo : null;
     base.updatedAt = cleanText(raw.updatedAt, 40) || new Date().toISOString();
     base.appVersion = APP_VERSION;
-    base.schemaVersion = 2;
+    base.schemaVersion = 3;
     return base;
 }
 
@@ -232,7 +246,7 @@ async function saveState(state) {
     normalized.updatedAt = new Date().toISOString();
     state.updatedAt = normalized.updatedAt;
     state.appVersion = APP_VERSION;
-    state.schemaVersion = 2;
+    state.schemaVersion = 3;
     localStorage.setItem(STATE_KEY, JSON.stringify(normalized));
     await idbSet(normalized);
     return normalized;
@@ -241,7 +255,7 @@ async function saveState(state) {
 function serializeBackup(state) {
     return JSON.stringify({
         format: 'desafios-do-amor-backup',
-        schemaVersion: 2,
+        schemaVersion: 3,
         exportedAt: new Date().toISOString(),
         state: normalizeState(state)
     }, null, 2);

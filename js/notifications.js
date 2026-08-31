@@ -31,6 +31,9 @@ function buildSmartReminder(state) {
     if (pending.length) {
         return `${prefix}ainda falta ${pending.join(', ')} no desafio de hoje.`;
     }
+    if (!state.checkIns?.some(item => item.dateKey === today)) {
+        return `${prefix}vocês concluíram os desafios. Que tal registrar como estão se sentindo hoje?`;
+    }
     const progress = weeklyProgress(state);
     const goal = state.settings.weeklyGoal;
     if (progress < goal) return `${prefix}vocês completaram o dia! Faltam ${goal - progress} desafios para a meta semanal.`;

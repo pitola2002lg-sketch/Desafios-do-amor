@@ -10,6 +10,8 @@ let currentCatalogRecords = [];
 let deferredInstallPrompt = null;
 let waitingWorker = null;
 let saveQueue = Promise.resolve();
+let selectedMood = 0;
+let currentSurprise = null;
 
 const screenHashes = {
     homeScreen: 'home', todayScreen: 'today', libraryScreen: 'explore', calendarScreen: 'calendar',
@@ -80,9 +82,10 @@ function updateHeader() {
     const names = [state.profile.person1, state.profile.person2].filter(Boolean);
     $('#coupleGreeting').textContent = names.length ? `${names.join(' & ')} — um momento de cada vez.` : 'Um pequeno gesto pode mudar o dia.';
     document.body.classList.toggle('dark-mode', state.settings.darkMode);
+    document.body.classList.toggle('discreet-mode', state.settings.discreetMode);
     $('#themeButton').textContent = state.settings.darkMode ? '☀️' : '🌙';
     $('#themeButton').setAttribute('aria-label', state.settings.darkMode ? 'Ativar modo claro' : 'Ativar modo escuro');
-    document.querySelector('meta[name="theme-color"]').content = state.settings.darkMode ? '#241c29' : '#f5576c';
+    document.querySelector('meta[name="theme-color"]').content = state.settings.darkMode ? '#241c29' : '#7b1fa2';
 }
 
 function renderHome() {
@@ -97,6 +100,35 @@ function renderHome() {
     const goal = state.settings.weeklyGoal;
     $('#weeklyGoalText').textContent = `${weekly} de ${goal} desafios`;
     $('#weeklyGoalBar').style.width = `${Math.min(100, Math.round((weekly / goal) * 100))}%`;
+    renderRelationshipDays();
+    const checkIn = state.checkIns.find(item => item.dateKey === todayKey());
+    selectedMood = checkIn?.mood || 0;
+    $$('#moodButtons button').forEach(button => {
+        const selected = Number(button.dataset.mood) === selectedMood;
+        button.classList.toggle('selected', selected);
+        button.setAttribute('aria-checked', String(selected));
+    });
+    $('#checkInNote').value = checkIn?.note || '';
+    updateAppBadge();
+}
+
+function renderRelationshipDays() {
+    const value = state.profile.anniversary;
+    if (!value) {
+        $('#relationshipDays').textContent = 'Nossa história';
+        $('#relationshipSince').textContent = 'Adicione a data do relacionamento nos ajustes.';
+        return;
+    }
+    const start = new Date(`${value}T12:00:00`);
+    const now = new Date(); now.setHours(12, 0, 0, 0);
+    const days = Math.floor((now - start) / 86_400_000);
+    if (Number.isNaN(days) || days < 0) {
+        $('#relationshipDays').textContent = 'Uma história prestes a começar';
+        $('#relationshipSince').textContent = 'A data escolhida ainda vai chegar.';
+        return;
+    }
+    $('#relationshipDays').textContent = `${days.toLocaleString('pt-BR')} dias juntos`;
+    $('#relationshipSince').textContent = `Desde ${start.toLocaleDateString('pt-BR')}`;
 }
 
 function renderToday() {
@@ -106,14 +138,16 @@ function renderToday() {
     list.innerHTML = categoriesForProfile().map(category => {
         const meta = categoryMeta(category);
         const completed = state.daily.status[category] === 'completed';
+        const sensitive = category === 'sexo' && state.settings.discreetMode;
         return `<article class="daily-card ${category} ${completed ? 'completed' : ''}">
             <span class="eyebrow">${meta.icon} ${meta.label.toUpperCase()}</span>
             <h3>${completed ? 'Concluído' : 'Desafio de hoje'}</h3>
-            <p>${escapeHTML(state.daily.challenges[category])}</p>
+            <p class="${sensitive ? 'sensitive-text' : ''}">${escapeHTML(state.daily.challenges[category])}</p>
             <div class="card-actions">
                 <button class="primary-card-action" type="button" data-daily-action="complete" data-category="${category}" ${completed ? 'disabled' : ''}>${completed ? '✓ Feito' : 'Marcar como feito'}</button>
                 <button type="button" data-daily-action="replace" data-category="${category}" ${completed ? 'disabled' : ''}>Trocar</button>
                 <button type="button" data-daily-action="share" data-category="${category}">Compartilhar</button>
+                ${sensitive ? `<button type="button" data-daily-action="reveal" data-category="${category}">Mostrar texto</button>` : ''}
             </div>
         </article>`;
     }).join('');
@@ -183,7 +217,8 @@ function renderLibrary() {
     catalog.innerHTML = currentCatalogRecords.map((item, index) => {
         const meta = categoryMeta(item.category);
         const favorite = state.favorites.includes(item.text);
-        return `<article class="catalog-item"><span class="catalog-icon" aria-hidden="true">${meta.icon}</span><div class="catalog-copy"><p>${escapeHTML(item.text)}</p><small>${meta.label}${item.source === 'custom' ? ' • Personalizado' : ` • ${getIntensity(item.text)}`}</small></div><div class="item-actions"><button type="button" data-catalog-action="favorite" data-index="${index}" aria-label="${favorite ? 'Remover dos' : 'Adicionar aos'} favoritos">${favorite ? '★' : '☆'}</button><button type="button" data-catalog-action="complete" data-index="${index}" aria-label="Marcar como concluído">✓</button><button type="button" data-catalog-action="share" data-index="${index}" aria-label="Compartilhar">↗</button>${item.source === 'custom' ? `<button type="button" data-catalog-action="delete" data-index="${index}" aria-label="Excluir desafio">🗑</button>` : ''}</div></article>`;
+        const sensitive = item.category === 'sexo' && state.settings.discreetMode;
+        return `<article class="catalog-item"><span class="catalog-icon" aria-hidden="true">${meta.icon}</span><div class="catalog-copy"><p class="${sensitive ? 'sensitive-text' : ''}">${escapeHTML(item.text)}</p><small>${meta.label}${item.source === 'custom' ? ' • Personalizado' : ` • ${getIntensity(item.text)}`}</small></div><div class="item-actions">${sensitive ? `<button type="button" data-catalog-action="reveal" data-index="${index}" aria-label="Revelar texto">👁</button>` : ''}<button type="button" data-catalog-action="favorite" data-index="${index}" aria-label="${favorite ? 'Remover dos' : 'Adicionar aos'} favoritos">${favorite ? '★' : '☆'}</button><button type="button" data-catalog-action="complete" data-index="${index}" aria-label="Marcar como concluído">✓</button><button type="button" data-catalog-action="share" data-index="${index}" aria-label="Compartilhar">↗</button>${item.source === 'custom' ? `<button type="button" data-catalog-action="delete" data-index="${index}" aria-label="Excluir desafio">🗑</button>` : ''}</div></article>`;
     }).join('');
 }
 
@@ -264,6 +299,15 @@ function renderStats() {
     const max = Math.max(1, ...Object.values(counts));
     $('#categoryStats').innerHTML = Object.entries(counts).map(([category, count]) => { const meta = categoryMeta(category); return `<div class="category-stat-row"><span>${meta.icon} ${meta.label}</span><progress max="${max}" value="${count}" aria-label="${meta.label}: ${count}"></progress><strong>${count}</strong></div>`; }).join('');
     $('#weeklyGoalInput').value = state.settings.weeklyGoal;
+    const cutoff = new Date(); cutoff.setHours(0, 0, 0, 0); cutoff.setDate(cutoff.getDate() - 29);
+    const recentCompletionKeys = state.completions.filter(item => new Date(`${item.dateKey}T12:00:00`) >= cutoff).map(item => item.dateKey);
+    const recentCheckIns = state.checkIns.filter(item => new Date(`${item.dateKey}T12:00:00`) >= cutoff);
+    $('#activeDays30').textContent = new Set([...recentCompletionKeys, ...recentCheckIns.map(item => item.dateKey)]).size;
+    if (recentCheckIns.length) {
+        const average = recentCheckIns.reduce((sum, item) => sum + item.mood, 0) / recentCheckIns.length;
+        const emoji = ['😔', '😕', '😐', '🙂', '😍'][Math.max(0, Math.min(4, Math.round(average) - 1))];
+        $('#averageMood').textContent = `${average.toFixed(1)} ${emoji}`;
+    } else $('#averageMood').textContent = '—';
 }
 
 function renderHistory() {
@@ -274,10 +318,11 @@ function renderHistory() {
 
 function renderSettings() {
     const profile = state.profile;
-    $('#profilePerson1').value = profile.person1; $('#profilePerson2').value = profile.person2; $('#profileGender').value = profile.gender; $('#profileIntimacy').checked = profile.intimacyEnabled; $('#profileIntensity').value = profile.intensity; $('#profileAge').checked = profile.ageConfirmed; $('#profileConsent').checked = profile.consentAccepted;
+    $('#profilePerson1').value = profile.person1; $('#profilePerson2').value = profile.person2; $('#profileAnniversary').value = profile.anniversary || ''; $('#profileAnniversary').max = todayKey(); $('#profileGender').value = profile.gender; $('#profileIntimacy').checked = profile.intimacyEnabled; $('#profileIntensity').value = profile.intensity; $('#profileAge').checked = profile.ageConfirmed; $('#profileConsent').checked = profile.consentAccepted;
     $('#profileAdultOptions').hidden = !profile.intimacyEnabled;
     $('#notificationEnabled').checked = state.settings.notificationsEnabled;
     $('#notificationTime').value = state.settings.notificationTime;
+    $('#discreetMode').checked = state.settings.discreetMode;
     const capability = notificationCapability();
     $('#notificationStatus').textContent = !capability.supported ? 'Não suportado neste navegador.' : `Permissão: ${capability.permission}.`;
     $('#backupStatus').textContent = state.settings.lastBackupAt ? `Último backup: ${new Date(state.settings.lastBackupAt).toLocaleString('pt-BR')}` : 'Nenhum backup exportado nesta versão.';
@@ -318,7 +363,7 @@ async function handleOnboarding(event) {
         $('#onboardingError').textContent = intimacyEnabled && !ageConfirmed ? 'Confirme a maioridade para ativar desafios de intimidade.' : 'É necessário aceitar o acordo de respeito e consentimento.';
         return;
     }
-    state.profile = { person1: $('#onboardingPerson1').value.trim(), person2: $('#onboardingPerson2').value.trim(), gender: $('#onboardingGender').value, ageConfirmed, consentAccepted, intimacyEnabled, intensity: $('#onboardingIntensity').value, onboardingComplete: true };
+    state.profile = { person1: $('#onboardingPerson1').value.trim(), person2: $('#onboardingPerson2').value.trim(), anniversary: '', gender: $('#onboardingGender').value, ageConfirmed, consentAccepted, intimacyEnabled, intensity: $('#onboardingIntensity').value, onboardingComplete: true };
     ensureDaily(true); await persist(); renderAllCurrentViews(); navigate('homeScreen'); toast('Perfil criado. Bem-vindos! 💕');
 }
 
@@ -332,7 +377,7 @@ async function handleProfile(event) {
         return;
     }
     const previousSignature = `${state.profile.gender}-${state.profile.intimacyEnabled}-${state.profile.intensity}`;
-    state.profile = { ...state.profile, person1: $('#profilePerson1').value.trim(), person2: $('#profilePerson2').value.trim(), gender: $('#profileGender').value, ageConfirmed, consentAccepted, intimacyEnabled, intensity: $('#profileIntensity').value, onboardingComplete: true };
+    state.profile = { ...state.profile, person1: $('#profilePerson1').value.trim(), person2: $('#profilePerson2').value.trim(), anniversary: $('#profileAnniversary').value, gender: $('#profileGender').value, ageConfirmed, consentAccepted, intimacyEnabled, intensity: $('#profileIntensity').value, onboardingComplete: true };
     const nextSignature = `${state.profile.gender}-${state.profile.intimacyEnabled}-${state.profile.intensity}`;
     if (previousSignature !== nextSignature) ensureDaily(true);
     await persist(); renderAllCurrentViews(); $('#profileError').textContent = ''; toast('Perfil atualizado.');
@@ -380,6 +425,42 @@ async function installApp() {
     deferredInstallPrompt.prompt(); await deferredInstallPrompt.userChoice; deferredInstallPrompt = null; $('#installButton').hidden = true;
 }
 
+function updateAppBadge() {
+    const pending = Object.values(state.daily.status || {}).filter(value => value !== 'completed').length;
+    try {
+        if (pending && navigator.setAppBadge) navigator.setAppBadge(pending);
+        else if (!pending && navigator.clearAppBadge) navigator.clearAppBadge();
+    } catch { /* O selo é opcional e não existe em todos os navegadores. */ }
+}
+
+async function saveCheckIn() {
+    if (!selectedMood) { toast('Escolha como vocês estão se sentindo hoje.'); return; }
+    const entry = { dateKey: todayKey(), mood: selectedMood, note: $('#checkInNote').value.trim().slice(0, 300), updatedAt: new Date().toISOString() };
+    const index = state.checkIns.findIndex(item => item.dateKey === entry.dateKey);
+    if (index >= 0) state.checkIns[index] = entry; else state.checkIns.push(entry);
+    await persist(); renderHome(); renderStats(); toast('Check-in do casal salvo. 💞');
+}
+
+async function openSurprise() {
+    const pool = libraryRecords();
+    const available = pool.filter(item => !state.surpriseRecent.includes(item.text));
+    const source = available.length ? available : pool;
+    if (!source.length) { toast('Nenhum desafio disponível para o perfil atual.'); return; }
+    currentSurprise = source[Math.floor(Math.random() * source.length)];
+    state.surpriseRecent = [...state.surpriseRecent, currentSurprise.text].slice(-12);
+    await persist();
+    const meta = categoryMeta(currentSurprise.category);
+    $('#surpriseCategory').textContent = `${meta.icon} ${meta.label}`;
+    $('#surpriseText').textContent = currentSurprise.text;
+    $('#surpriseText').classList.toggle('sensitive-text', currentSurprise.category === 'sexo' && state.settings.discreetMode);
+    $('#surpriseText').classList.add('revealed');
+    $('#surpriseDialog').showModal();
+}
+
+function closeSurprise() {
+    if ($('#surpriseDialog').open) $('#surpriseDialog').close();
+}
+
 function bindEvents() {
     document.addEventListener('click', async event => {
         const screenButton = event.target.closest('[data-screen]');
@@ -389,6 +470,8 @@ function bindEvents() {
         const actions = {
             'toggle-theme': async () => { state.settings.darkMode = !state.settings.darkMode; await persist(); updateHeader(); },
             'go-today': () => navigate('todayScreen'),
+            'surprise-now': openSurprise,
+            'save-checkin': saveCheckIn,
             'refresh-daily': async () => {
                 if (!confirm('Trocar somente os desafios que ainda estão pendentes hoje?')) return;
                 Object.keys(state.daily.challenges).forEach(category => {
@@ -405,7 +488,11 @@ function bindEvents() {
             'install-app': installApp,
             'check-update': () => checkForUpdates(true),
             'apply-update': () => waitingWorker?.postMessage({ type: 'SKIP_WAITING' }),
-            'dismiss-update': () => { $('#updateBanner').hidden = true; }
+            'dismiss-update': () => { $('#updateBanner').hidden = true; },
+            'close-surprise': closeSurprise,
+            'complete-surprise': async () => { if (!currentSurprise) return; const item = currentSurprise; closeSurprise(); await completeChallenge(item.category, item.text, item.source); },
+            'favorite-surprise': async () => { if (currentSurprise) await toggleFavorite(currentSurprise.text); },
+            'share-surprise': async () => { if (currentSurprise) await shareChallenge(currentSurprise.text); }
         };
         await actions[actionButton.dataset.action]?.();
     });
@@ -416,6 +503,11 @@ function bindEvents() {
         if (button.dataset.dailyAction === 'complete') await completeChallenge(category, text, 'daily');
         if (button.dataset.dailyAction === 'replace') { state.daily.challenges[category] = pickChallenge(category); state.daily.status[category] = 'pending'; await persist(); renderToday(); toast('Desafio trocado.'); }
         if (button.dataset.dailyAction === 'share') await shareChallenge(text);
+        if (button.dataset.dailyAction === 'reveal') {
+            const paragraph = button.closest('.daily-card').querySelector('.sensitive-text');
+            paragraph?.classList.toggle('revealed');
+            button.textContent = paragraph?.classList.contains('revealed') ? 'Ocultar texto' : 'Mostrar texto';
+        }
     });
 
     $('#challengeCatalog').addEventListener('click', async event => {
@@ -424,6 +516,7 @@ function bindEvents() {
         if (button.dataset.catalogAction === 'favorite') await toggleFavorite(item.text);
         if (button.dataset.catalogAction === 'complete') await completeChallenge(item.category, item.text, item.source);
         if (button.dataset.catalogAction === 'share') await shareChallenge(item.text);
+        if (button.dataset.catalogAction === 'reveal') button.closest('.catalog-item').querySelector('.sensitive-text')?.classList.toggle('revealed');
         if (button.dataset.catalogAction === 'delete' && confirm('Excluir este desafio personalizado?')) { state.customChallenges = state.customChallenges.filter(custom => custom.id !== item.id); state.favorites = state.favorites.filter(text => text !== item.text); await persist(); renderLibrary(); toast('Desafio excluído.'); }
     });
 
@@ -450,12 +543,19 @@ function bindEvents() {
     $('#libraryCategory').addEventListener('change', renderLibrary);
     $('#historyFilter').addEventListener('change', renderHistory);
     $('#notificationEnabled').addEventListener('change', handleNotificationToggle);
+    $('#discreetMode').addEventListener('change', async event => { state.settings.discreetMode = event.target.checked; await persist(); renderAllCurrentViews(); toast(event.target.checked ? 'Modo discreto ativado.' : 'Modo discreto desativado.'); });
+    $('#moodButtons').addEventListener('click', event => {
+        const button = event.target.closest('[data-mood]'); if (!button) return;
+        selectedMood = Number(button.dataset.mood);
+        $$('#moodButtons button').forEach(item => { const selected = item === button; item.classList.toggle('selected', selected); item.setAttribute('aria-checked', String(selected)); });
+    });
     $('#notificationTime').addEventListener('change', async event => { state.settings.notificationTime = event.target.value || '20:00'; state.settings.lastReminderDate = ''; await persist(); toast('Horário salvo.'); });
     $('#backupFile').addEventListener('change', async event => { await importBackup(event.target.files?.[0]); event.target.value = ''; });
     window.addEventListener('online', () => { updateConnectionStatus(); checkForUpdates(false); });
     window.addEventListener('offline', updateConnectionStatus);
     window.addEventListener('hashchange', () => navigate(hashScreens[location.hash.slice(1)] || 'homeScreen', false));
     window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredInstallPrompt = event; $('#installButton').hidden = false; });
+    window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; $('#installButton').hidden = true; toast('Aplicativo instalado com sucesso.'); });
 }
 
 async function registerServiceWorker() {
@@ -480,6 +580,7 @@ async function init() {
     navigate(state.profile.onboardingComplete ? (hashScreens[location.hash.slice(1)] || 'homeScreen') : 'onboardingScreen', false);
     startNotificationSystem({ getState: () => state, save: async current => { state = current; await persist(); }, onStatus: message => console.info(message) });
     await registerServiceWorker();
+    setTimeout(() => $('#splashScreen').classList.add('done'), 350);
     setTimeout(() => checkForUpdates(false), 1500);
     console.info(`Desafios do Amor v${APP_VERSION} carregado.`);
 }
