@@ -168,7 +168,10 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .daily-card.completed { filter: saturate(.65); }
 .daily-card h3 { margin: 5px 0; }
 .daily-card p { margin: 8px 0 18px; font-size: 1rem; }
-.discreet-mode .sensitive-text:not(.revealed) { filter: blur(7px); user-select: none; }
+.private-placeholder { color: var(--muted); font-style: italic; }
+.catalog-count { font-size: .85rem; color: var(--muted); margin: 4px 0 12px; }
+.show-more { margin: 16px auto 26px; display: block; }
+.history-reveal { margin-top: 8px; min-height: 40px; padding: 7px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-soft); color: var(--text); cursor: pointer; }
 .daily-card .card-actions { display: flex; flex-wrap: wrap; gap: 9px; }
 .daily-card button { min-height: 40px; padding: 8px 13px; border: 1px solid rgba(255,255,255,.4); border-radius: 12px; background: rgba(255,255,255,.18); color: #fff; font-weight: 800; cursor: pointer; }
 .daily-card button.primary-card-action { background: #fff; color: #98355e; }

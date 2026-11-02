@@ -70,7 +70,7 @@
                 <div class="checkin-card">
                     <div><p class="eyebrow">CHECK-IN DO CASAL</p><h3>Como vocês estão hoje?</h3><p class="muted">Um registro rápido ajuda a acompanhar a conexão de vocês.</p></div>
                     <div id="moodButtons" class="mood-buttons" role="radiogroup" aria-label="Humor do casal">
-                        <button type="button" data-mood="1" aria-label="Muito difícil">😔</button><button type="button" data-mood="2" aria-label="Difícil">😕</button><button type="button" data-mood="3" aria-label="Tudo bem">😐</button><button type="button" data-mood="4" aria-label="Bem">🙂</button><button type="button" data-mood="5" aria-label="Muito bem">😍</button>
+                        <button type="button" role="radio" tabindex="-1" aria-checked="false" data-mood="1" aria-label="Muito difícil">😔</button><button type="button" role="radio" tabindex="-1" aria-checked="false" data-mood="2" aria-label="Difícil">😕</button><button type="button" role="radio" tabindex="0" aria-checked="false" data-mood="3" aria-label="Tudo bem">😐</button><button type="button" role="radio" tabindex="-1" aria-checked="false" data-mood="4" aria-label="Bem">🙂</button><button type="button" role="radio" tabindex="-1" aria-checked="false" data-mood="5" aria-label="Muito bem">😍</button>
                     </div>
                     <label class="field"><span>Uma nota sobre o dia (opcional)</span><textarea id="checkInNote" maxlength="300" rows="2" placeholder="O que tornou o dia especial?"></textarea></label>
                     <button class="primary-button" type="button" data-action="save-checkin">Salvar check-in</button>
@@ -89,7 +89,9 @@
                     <label class="search-field"><span class="sr-only">Pesquisar desafios</span><input id="challengeSearch" type="search" placeholder="Pesquisar desafios…"><span aria-hidden="true">🔎</span></label>
                     <select id="libraryCategory" aria-label="Filtrar categoria"><option value="all">Todas as categorias</option><option value="carinho">Carinho</option><option value="amor">Amor</option><option value="sexo">Intimidade</option><option value="custom">Personalizados</option><option value="favorites">Favoritos</option></select>
                 </div>
+                <p id="catalogResultCount" class="catalog-count" role="status"></p>
                 <div id="challengeCatalog" class="catalog-list"></div>
+                <button id="showMoreChallenges" class="secondary-button full-button show-more" type="button" hidden>Mostrar mais desafios</button>
                 <div class="form-card custom-card"><h3>Criar desafio personalizado</h3><form id="customChallengeForm"><label class="field"><span>Categoria</span><select id="customCategory"><option value="carinho">Carinho</option><option value="amor">Amor</option><option value="sexo">Intimidade</option></select></label><label class="field"><span>Seu desafio</span><textarea id="customText" maxlength="240" rows="3" placeholder="Ex.: preparar juntos a sobremesa favorita" required></textarea></label><button class="primary-button" type="submit">Adicionar desafio</button></form></div>
             </section>
 
@@ -109,7 +111,9 @@
             <section id="historyScreen" class="screen" aria-labelledby="historyTitle">
                 <div class="section-heading"><div><p class="eyebrow">NOSSA HISTÓRIA</p><h2 id="historyTitle" tabindex="-1">Desafios concluídos</h2></div></div>
                 <label class="field compact-field"><span>Filtrar histórico</span><select id="historyFilter"><option value="all">Todos</option><option value="carinho">Carinho</option><option value="amor">Amor</option><option value="sexo">Intimidade</option></select></label>
+                <p id="historyResultCount" class="catalog-count" role="status"></p>
                 <div id="historyList" class="history-list"></div>
+                <button id="showMoreHistory" class="secondary-button full-button show-more" type="button" hidden>Mostrar mais registros</button>
             </section>
 
             <section id="settingsScreen" class="screen" aria-labelledby="settingsTitle">
@@ -120,7 +124,7 @@
 
                 <div class="form-card"><h3>Dados e privacidade</h3><p class="muted">O progresso fica localmente neste aparelho. O arquivo de backup contém informações do casal; guarde-o em local privado.</p><label class="switch-row"><span><strong>Modo discreto</strong><small>Oculta os textos íntimos até vocês tocarem para revelar.</small></span><input id="discreetMode" type="checkbox"></label><div class="button-row"><button class="secondary-button" type="button" data-action="export-backup">Exportar backup</button><button class="secondary-button" type="button" data-action="choose-backup">Restaurar backup</button></div><input id="backupFile" type="file" accept="application/json,.json" hidden><small id="backupStatus" class="status-text">Nenhum backup exportado nesta versão.</small></div>
 
-                <div class="form-card"><h3>Aplicativo</h3><p id="connectionStatus" class="status-text">Verificando conexão…</p><p class="status-text">Versão instalada: <strong>3.2.0</strong></p><div class="button-row"><button id="installButton" class="primary-button" type="button" data-action="install-app" hidden>Instalar aplicativo</button><button class="secondary-button" type="button" data-action="check-update">Buscar atualização</button></div><details class="install-help"><summary>Como instalar no celular</summary><p><strong>Android:</strong> abra pelo Chrome ou Edge, toque no menu e escolha “Instalar aplicativo”.</p><p><strong>iPhone:</strong> abra pelo Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”.</p></details></div>
+                <div class="form-card"><h3>Aplicativo</h3><p id="connectionStatus" class="status-text">Verificando conexão…</p><p class="status-text">Versão instalada: <strong id="appVersionLabel">3.3.0</strong></p><div class="button-row"><button id="installButton" class="primary-button" type="button" data-action="install-app" hidden>Instalar aplicativo</button><button class="secondary-button" type="button" data-action="check-update">Buscar atualização</button></div><details class="install-help"><summary>Como instalar no celular</summary><p><strong>Android:</strong> abra pelo Chrome ou Edge, toque no menu e escolha “Instalar aplicativo”.</p><p><strong>iPhone:</strong> abra pelo Safari, toque em Compartilhar e escolha “Adicionar à Tela de Início”.</p></details></div>
             </section>
         </main>
 
@@ -128,7 +132,7 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <dialog id="surpriseDialog" class="surprise-dialog"><button class="dialog-close" type="button" data-action="close-surprise" aria-label="Fechar">×</button><img src="icon-192.png" alt=""><p class="eyebrow">SURPRESA PARA AGORA</p><h2 id="surpriseCategory">Um desafio especial</h2><p id="surpriseText"></p><div class="button-row"><button class="primary-button" type="button" data-action="complete-surprise">Concluir</button><button class="secondary-button" type="button" data-action="favorite-surprise">Favoritar</button><button class="secondary-button" type="button" data-action="share-surprise">Compartilhar</button></div></dialog>
+    <dialog id="surpriseDialog" class="surprise-dialog"><button class="dialog-close" type="button" data-action="close-surprise" aria-label="Fechar">×</button><img src="icon-192.png" alt=""><p class="eyebrow">SURPRESA PARA AGORA</p><h2 id="surpriseCategory">Um desafio especial</h2><p id="surpriseText"></p><div class="button-row"><button class="primary-button" type="button" data-action="complete-surprise">Concluir</button><button id="revealSurprise" class="secondary-button" type="button" data-action="reveal-surprise" hidden>Revelar desafio</button><button class="secondary-button" type="button" data-action="favorite-surprise">Favoritar</button><button class="secondary-button" type="button" data-action="share-surprise">Compartilhar</button></div></dialog>
     <div id="updateBanner" class="update-banner" hidden role="status"><span>✨ Nova versão disponível.</span><button type="button" data-action="apply-update">Atualizar agora</button><button type="button" data-action="dismiss-update">Depois</button></div>
     <script defer src="js/challenges.js"></script>
     <script defer src="js/storage.js"></script>

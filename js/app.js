@@ -7,6 +7,19 @@ const { $, $$, categoryMeta, escapeHTML, showScreen, toast } = window.LoveUI;
 let state;
 let currentCalendar = new Date();
 let currentCatalogRecords = [];
+let currentHistoryRecords = [];
+let catalogLimit = 36;
+let historyLimit = 50;
+const hiddenContentMessage = 'Conteúdo reservado. Toque em Revelar para visualizar.';
+function isPrivateCategory(category) {
+    return category === 'sexo' && (state.settings.discreetMode || !categoriesForProfile().includes('sexo'));
+}
+function privateText(text, hidden) { return hidden ? hiddenContentMessage : escapeHTML(text); }
+function canShare(category, revealed) {
+    if (!isPrivateCategory(category) || revealed) return true;
+    toast('Revele o desafio antes de compartilhá-lo.');
+    return false;
+}
 let deferredInstallPrompt = null;
 let waitingWorker = null;
 let saveQueue = Promise.resolve();
@@ -20,8 +33,13 @@ const screenHashes = {
 const hashScreens = Object.fromEntries(Object.entries(screenHashes).map(([screen, hash]) => [hash, screen]));
 
 function persist() {
-    saveQueue = saveQueue.then(async () => { state = await saveState(state); }).catch(error => console.error('Falha ao salvar estado', error));
-    return saveQueue;
+    // Captura um snapshot agora; saves assíncronos não podem substituir mudanças mais recentes.
+    const snapshot = JSON.parse(JSON.stringify(state));
+    saveQueue = saveQueue.catch(() => {}).then(() => saveState(snapshot));
+    return saveQueue.catch(error => {
+        console.error('Falha ao salvar estado', error);
+        toast('Não foi possível salvar os dados. Verifique o armazenamento do navegador.');
+    });
 }
 
 function dateKeyFromDate(date) {
@@ -51,16 +69,22 @@ function dailyIsValid() {
     const categories = categoriesForProfile();
     return state.daily.dateKey === todayKey()
         && categories.every(category => typeof state.daily.challenges[category] === 'string' && state.daily.challenges[category])
-        && Object.keys(state.daily.challenges).every(category => categories.includes(category));
+        && Object.keys(state.daily.challenges).every(category => categories.includes(category))
+        && categories.every(category => getChallengePool(category, state.profile).includes(state.daily.challenges[category]))
+        && categories.every(category => ['pending', 'completed'].includes(state.daily.status[category]));
 }
 
 function ensureDaily(force = false) {
     if (!force && dailyIsValid()) return;
     const categories = categoriesForProfile();
+    const previous = state.daily;
+    const sameDay = previous.dateKey === todayKey();
     state.daily = { dateKey: todayKey(), challenges: {}, status: {} };
     categories.forEach(category => {
-        state.daily.challenges[category] = pickChallenge(category);
-        state.daily.status[category] = 'pending';
+        const previousText = previous.challenges?.[category];
+        const permitted = sameDay && previousText && getChallengePool(category, state.profile).includes(previousText);
+        state.daily.challenges[category] = permitted ? previousText : pickChallenge(category);
+        state.daily.status[category] = permitted && previous.status?.[category] === 'completed' ? 'completed' : 'pending';
     });
     persist();
 }
@@ -107,7 +131,9 @@ function renderHome() {
         const selected = Number(button.dataset.mood) === selectedMood;
         button.classList.toggle('selected', selected);
         button.setAttribute('aria-checked', String(selected));
+        button.tabIndex = selected ? 0 : -1;
     });
+    if (!selectedMood) $('#moodButtons button[data-mood="3"]').tabIndex = 0;
     $('#checkInNote').value = checkIn?.note || '';
     updateAppBadge();
 }
@@ -121,7 +147,8 @@ function renderRelationshipDays() {
     }
     const start = new Date(`${value}T12:00:00`);
     const now = new Date(); now.setHours(12, 0, 0, 0);
-    const days = Math.floor((now - start) / 86_400_000);
+    const days = Math.round((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+        - Date.UTC(start.getFullYear(), start.getMonth(), start.getDate())) / 86_400_000);
     if (Number.isNaN(days) || days < 0) {
         $('#relationshipDays').textContent = 'Uma história prestes a começar';
         $('#relationshipSince').textContent = 'A data escolhida ainda vai chegar.';
@@ -138,16 +165,16 @@ function renderToday() {
     list.innerHTML = categoriesForProfile().map(category => {
         const meta = categoryMeta(category);
         const completed = state.daily.status[category] === 'completed';
-        const sensitive = category === 'sexo' && state.settings.discreetMode;
+        const sensitive = isPrivateCategory(category);
         return `<article class="daily-card ${category} ${completed ? 'completed' : ''}">
             <span class="eyebrow">${meta.icon} ${meta.label.toUpperCase()}</span>
             <h3>${completed ? 'Concluído' : 'Desafio de hoje'}</h3>
-            <p class="${sensitive ? 'sensitive-text' : ''}">${escapeHTML(state.daily.challenges[category])}</p>
+            <p class="${sensitive ? 'private-placeholder' : ''}">${privateText(state.daily.challenges[category], sensitive)}</p>
             <div class="card-actions">
                 <button class="primary-card-action" type="button" data-daily-action="complete" data-category="${category}" ${completed ? 'disabled' : ''}>${completed ? '✓ Feito' : 'Marcar como feito'}</button>
                 <button type="button" data-daily-action="replace" data-category="${category}" ${completed ? 'disabled' : ''}>Trocar</button>
                 <button type="button" data-daily-action="share" data-category="${category}">Compartilhar</button>
-                ${sensitive ? `<button type="button" data-daily-action="reveal" data-category="${category}">Mostrar texto</button>` : ''}
+                ${sensitive ? `<button type="button" data-daily-action="reveal" data-category="${category}" aria-pressed="false">Revelar</button>` : ''}
             </div>
         </article>`;
     }).join('');
@@ -197,7 +224,8 @@ async function undoLastCompletion() {
 function libraryRecords() {
     const records = [];
     categoriesForProfile().forEach(category => getChallengePool(category, state.profile).forEach(text => records.push({ category, text, source: 'extra' })));
-    state.customChallenges.forEach(item => records.push({ ...item, source: 'custom' }));
+    state.customChallenges.filter(item => item.category !== 'sexo' || categoriesForProfile().includes('sexo'))
+        .forEach(item => records.push({ ...item, source: 'custom' }));
     return records;
 }
 
@@ -210,16 +238,19 @@ function renderLibrary() {
         return categoryMatch && item.text.toLocaleLowerCase('pt-BR').includes(query);
     });
     const catalog = $('#challengeCatalog');
+    $('#catalogResultCount').textContent = `${currentCatalogRecords.length} desafio${currentCatalogRecords.length === 1 ? '' : 's'} encontrado${currentCatalogRecords.length === 1 ? '' : 's'}`;
     if (!currentCatalogRecords.length) {
         catalog.innerHTML = '<div class="empty-state">Nenhum desafio encontrado com este filtro.</div>';
+        $('#showMoreChallenges').hidden = true;
         return;
     }
-    catalog.innerHTML = currentCatalogRecords.map((item, index) => {
+    catalog.innerHTML = currentCatalogRecords.slice(0, catalogLimit).map((item, index) => {
         const meta = categoryMeta(item.category);
         const favorite = state.favorites.includes(item.text);
-        const sensitive = item.category === 'sexo' && state.settings.discreetMode;
-        return `<article class="catalog-item"><span class="catalog-icon" aria-hidden="true">${meta.icon}</span><div class="catalog-copy"><p class="${sensitive ? 'sensitive-text' : ''}">${escapeHTML(item.text)}</p><small>${meta.label}${item.source === 'custom' ? ' • Personalizado' : ` • ${getIntensity(item.text)}`}</small></div><div class="item-actions">${sensitive ? `<button type="button" data-catalog-action="reveal" data-index="${index}" aria-label="Revelar texto">👁</button>` : ''}<button type="button" data-catalog-action="favorite" data-index="${index}" aria-label="${favorite ? 'Remover dos' : 'Adicionar aos'} favoritos">${favorite ? '★' : '☆'}</button><button type="button" data-catalog-action="complete" data-index="${index}" aria-label="Marcar como concluído">✓</button><button type="button" data-catalog-action="share" data-index="${index}" aria-label="Compartilhar">↗</button>${item.source === 'custom' ? `<button type="button" data-catalog-action="delete" data-index="${index}" aria-label="Excluir desafio">🗑</button>` : ''}</div></article>`;
+        const sensitive = isPrivateCategory(item.category);
+        return `<article class="catalog-item"><span class="catalog-icon" aria-hidden="true">${meta.icon}</span><div class="catalog-copy"><p class="${sensitive ? 'private-placeholder' : ''}">${privateText(item.text, sensitive)}</p><small>${meta.label}${item.source === 'custom' ? ' • Personalizado' : ` • ${getIntensity(item.text)}`}</small></div><div class="item-actions">${sensitive ? `<button type="button" data-catalog-action="reveal" data-index="${index}" aria-pressed="false" aria-label="Revelar texto">👁</button>` : ''}<button type="button" data-catalog-action="favorite" data-index="${index}" aria-label="${favorite ? 'Remover dos' : 'Adicionar aos'} favoritos">${favorite ? '★' : '☆'}</button><button type="button" data-catalog-action="complete" data-index="${index}" aria-label="Marcar como concluído">✓</button><button type="button" data-catalog-action="share" data-index="${index}" aria-label="Compartilhar">↗</button>${item.source === 'custom' ? `<button type="button" data-catalog-action="delete" data-index="${index}" aria-label="Excluir desafio">🗑</button>` : ''}</div></article>`;
     }).join('');
+    $('#showMoreChallenges').hidden = currentCatalogRecords.length <= catalogLimit;
 }
 
 async function toggleFavorite(text) {
@@ -256,7 +287,7 @@ function renderCalendar() {
     $('#calendar').innerHTML = html;
     const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
     const count = state.markedDates.filter(key => key.startsWith(monthPrefix)).length;
-    $('#calendarSummary').textContent = `${count} dia${count === 1 ? '' : 's'} especial${count === 1 ? '' : 'is'} neste mês.`;
+    $('#calendarSummary').textContent = count === 1 ? '1 dia especial neste mês.' : `${count} dias especiais neste mês.`;
 }
 
 function completionDayKeys() {
@@ -266,7 +297,7 @@ function completionDayKeys() {
 function streaks() {
     const keys = completionDayKeys();
     if (!keys.length) return { current: 0, best: 0 };
-    const numbers = keys.map(key => new Date(`${key}T12:00:00`).getTime());
+    const numbers = keys.map(key => { const [y, m, d] = key.split('-').map(Number); return Date.UTC(y, m - 1, d); });
     let best = 1, run = 1;
     for (let index = 1; index < numbers.length; index += 1) {
         run = Math.round((numbers[index] - numbers[index - 1]) / 86_400_000) === 1 ? run + 1 : 1;
@@ -300,8 +331,10 @@ function renderStats() {
     $('#categoryStats').innerHTML = Object.entries(counts).map(([category, count]) => { const meta = categoryMeta(category); return `<div class="category-stat-row"><span>${meta.icon} ${meta.label}</span><progress max="${max}" value="${count}" aria-label="${meta.label}: ${count}"></progress><strong>${count}</strong></div>`; }).join('');
     $('#weeklyGoalInput').value = state.settings.weeklyGoal;
     const cutoff = new Date(); cutoff.setHours(0, 0, 0, 0); cutoff.setDate(cutoff.getDate() - 29);
-    const recentCompletionKeys = state.completions.filter(item => new Date(`${item.dateKey}T12:00:00`) >= cutoff).map(item => item.dateKey);
-    const recentCheckIns = state.checkIns.filter(item => new Date(`${item.dateKey}T12:00:00`) >= cutoff);
+    const newest = todayKey();
+    const oldest = dateKeyFromDate(cutoff);
+    const recentCompletionKeys = state.completions.filter(item => item.dateKey >= oldest && item.dateKey <= newest).map(item => item.dateKey);
+    const recentCheckIns = state.checkIns.filter(item => item.dateKey >= oldest && item.dateKey <= newest);
     $('#activeDays30').textContent = new Set([...recentCompletionKeys, ...recentCheckIns.map(item => item.dateKey)]).size;
     if (recentCheckIns.length) {
         const average = recentCheckIns.reduce((sum, item) => sum + item.mood, 0) / recentCheckIns.length;
@@ -312,12 +345,19 @@ function renderStats() {
 
 function renderHistory() {
     const filter = $('#historyFilter').value;
-    const entries = [...state.completions].reverse().filter(item => filter === 'all' || item.category === filter);
-    $('#historyList').innerHTML = entries.length ? entries.map(item => { const meta = categoryMeta(item.category); const date = new Date(item.completedAt); return `<article class="history-item"><span class="catalog-icon">${meta.icon}</span><div><p>${escapeHTML(item.text)}</p><small>${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • ${meta.label}</small></div></article>`; }).join('') : '<div class="empty-state">O histórico ainda está vazio. Concluam o primeiro desafio juntos.</div>';
+    currentHistoryRecords = [...state.completions].reverse().filter(item => filter === 'all' || item.category === filter);
+    $('#historyResultCount').textContent = `${currentHistoryRecords.length} registro${currentHistoryRecords.length === 1 ? '' : 's'}`;
+    $('#showMoreHistory').hidden = currentHistoryRecords.length <= historyLimit;
+    $('#historyList').innerHTML = currentHistoryRecords.length ? currentHistoryRecords.slice(0, historyLimit).map((item, index) => {
+        const meta = categoryMeta(item.category); const date = new Date(item.completedAt);
+        const sensitive = isPrivateCategory(item.category);
+        return `<article class="history-item"><span class="catalog-icon">${meta.icon}</span><div><p class="${sensitive ? 'private-placeholder' : ''}">${privateText(item.text, sensitive)}</p><small>${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })} • ${meta.label}</small>${sensitive ? `<button type="button" class="history-reveal" data-history-index="${index}" aria-pressed="false">Revelar</button>` : ''}</div></article>`;
+    }).join('') : '<div class="empty-state">O histórico ainda está vazio. Concluam o primeiro desafio juntos.</div>';
 }
 
 function renderSettings() {
     const profile = state.profile;
+    $('#appVersionLabel').textContent = APP_VERSION;
     $('#profilePerson1').value = profile.person1; $('#profilePerson2').value = profile.person2; $('#profileAnniversary').value = profile.anniversary || ''; $('#profileAnniversary').max = todayKey(); $('#profileGender').value = profile.gender; $('#profileIntimacy').checked = profile.intimacyEnabled; $('#profileIntensity').value = profile.intensity; $('#profileAge').checked = profile.ageConfirmed; $('#profileConsent').checked = profile.consentAccepted;
     $('#profileAdultOptions').hidden = !profile.intimacyEnabled;
     $('#notificationEnabled').checked = state.settings.notificationsEnabled;
@@ -351,7 +391,7 @@ function navigate(screenId, updateHash = true) {
 
 function updateConnectionStatus() {
     const element = $('#connectionStatus');
-    if (element) element.textContent = navigator.onLine ? '🟢 Online — atualizações disponíveis.' : '🟠 Offline — o conteúdo salvo continua funcionando.';
+    if (element) element.textContent = navigator.onLine ? 'Online — você pode verificar atualizações.' : 'Offline — o conteúdo salvo continua funcionando.';
 }
 
 async function handleOnboarding(event) {
@@ -376,9 +416,9 @@ async function handleProfile(event) {
         $('#profileError').textContent = intimacyEnabled && !ageConfirmed ? 'Confirme a maioridade para ativar intimidade.' : 'Confirme o acordo de consentimento.';
         return;
     }
-    const previousSignature = `${state.profile.gender}-${state.profile.intimacyEnabled}-${state.profile.intensity}`;
+    const previousSignature = `${state.profile.gender}-${state.profile.intimacyEnabled}-${state.profile.ageConfirmed}-${state.profile.consentAccepted}-${state.profile.intensity}`;
     state.profile = { ...state.profile, person1: $('#profilePerson1').value.trim(), person2: $('#profilePerson2').value.trim(), anniversary: $('#profileAnniversary').value, gender: $('#profileGender').value, ageConfirmed, consentAccepted, intimacyEnabled, intensity: $('#profileIntensity').value, onboardingComplete: true };
-    const nextSignature = `${state.profile.gender}-${state.profile.intimacyEnabled}-${state.profile.intensity}`;
+    const nextSignature = `${state.profile.gender}-${state.profile.intimacyEnabled}-${state.profile.ageConfirmed}-${state.profile.consentAccepted}-${state.profile.intensity}`;
     if (previousSignature !== nextSignature) ensureDaily(true);
     await persist(); renderAllCurrentViews(); $('#profileError').textContent = ''; toast('Perfil atualizado.');
 }
@@ -386,8 +426,11 @@ async function handleProfile(event) {
 async function exportBackup() {
     state.settings.lastBackupAt = new Date().toISOString(); await persist();
     const blob = new Blob([serializeBackup(state)], { type: 'application/json' });
-    const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `desafios-do-amor-backup-${todayKey()}.json`; link.click();
-    setTimeout(() => URL.revokeObjectURL(link.href), 1000); renderSettings(); toast('Backup exportado. Guarde o arquivo em local privado.');
+    const link = document.createElement('a'); link.href = URL.createObjectURL(blob);
+    link.download = `desafios-do-amor-backup-${todayKey()}.json`;
+    document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
+    renderSettings(); toast('Arquivo de backup preparado. Guarde-o em local privado.');
 }
 
 async function importBackup(file) {
@@ -396,7 +439,10 @@ async function importBackup(file) {
     try {
         const imported = parseBackup(await file.text());
         if (!confirm('Restaurar este backup substituirá os dados atuais. Deseja continuar?')) return;
-        state = imported; await persist(); ensureDaily(); renderAllCurrentViews(); navigate('homeScreen'); toast('Backup restaurado com sucesso.');
+        await saveQueue.catch(() => {});
+        state = imported; await persist(); ensureDaily(); renderAllCurrentViews();
+        navigate(state.profile.onboardingComplete ? 'homeScreen' : 'onboardingScreen');
+        toast('Backup restaurado com sucesso.');
     } catch { toast('Backup inválido ou corrompido.'); }
 }
 
@@ -451,14 +497,24 @@ async function openSurprise() {
     await persist();
     const meta = categoryMeta(currentSurprise.category);
     $('#surpriseCategory').textContent = `${meta.icon} ${meta.label}`;
-    $('#surpriseText').textContent = currentSurprise.text;
-    $('#surpriseText').classList.toggle('sensitive-text', currentSurprise.category === 'sexo' && state.settings.discreetMode);
-    $('#surpriseText').classList.add('revealed');
+    const concealed = isPrivateCategory(currentSurprise.category);
+    $('#surpriseText').textContent = concealed ? hiddenContentMessage : currentSurprise.text;
+    $('#surpriseText').classList.toggle('private-placeholder', concealed);
+    $('#revealSurprise').hidden = !concealed;
+    $('#revealSurprise').setAttribute('aria-pressed', 'false');
+    $('#revealSurprise').textContent = 'Revelar desafio';
     $('#surpriseDialog').showModal();
 }
 
 function closeSurprise() {
     if ($('#surpriseDialog').open) $('#surpriseDialog').close();
+}
+
+function refreshForNewDay() {
+    if (!state?.profile?.onboardingComplete || state.daily.dateKey === todayKey()) return;
+    ensureDaily();
+    renderAllCurrentViews();
+    toast('Os desafios de hoje já estão disponíveis.');
 }
 
 function bindEvents() {
@@ -479,8 +535,8 @@ function bindEvents() {
                 });
                 await persist(); renderAllCurrentViews(); toast('Desafios pendentes atualizados.');
             },
-            'previous-month': () => { currentCalendar.setMonth(currentCalendar.getMonth() - 1); renderCalendar(); },
-            'next-month': () => { currentCalendar.setMonth(currentCalendar.getMonth() + 1); renderCalendar(); },
+            'previous-month': () => { currentCalendar.setDate(1); currentCalendar.setMonth(currentCalendar.getMonth() - 1); renderCalendar(); },
+            'next-month': () => { currentCalendar.setDate(1); currentCalendar.setMonth(currentCalendar.getMonth() + 1); renderCalendar(); },
             'save-weekly-goal': async () => { state.settings.weeklyGoal = Math.min(21, Math.max(1, Number.parseInt($('#weeklyGoalInput').value, 10) || 5)); await persist(); renderAllCurrentViews(); toast('Meta semanal salva.'); },
             'export-backup': exportBackup,
             'choose-backup': () => $('#backupFile').click(),
@@ -492,7 +548,18 @@ function bindEvents() {
             'close-surprise': closeSurprise,
             'complete-surprise': async () => { if (!currentSurprise) return; const item = currentSurprise; closeSurprise(); await completeChallenge(item.category, item.text, item.source); },
             'favorite-surprise': async () => { if (currentSurprise) await toggleFavorite(currentSurprise.text); },
-            'share-surprise': async () => { if (currentSurprise) await shareChallenge(currentSurprise.text); }
+            'share-surprise': async () => {
+                if (currentSurprise && canShare(currentSurprise.category, !$('#surpriseText').classList.contains('private-placeholder')))
+                    await shareChallenge(currentSurprise.text);
+            },
+            'reveal-surprise': () => {
+                if (!currentSurprise) return;
+                const text = $('#surpriseText');
+                const isConcealed = text.classList.toggle('private-placeholder');
+                text.textContent = isConcealed ? hiddenContentMessage : currentSurprise.text;
+                $('#revealSurprise').textContent = isConcealed ? 'Revelar desafio' : 'Ocultar desafio';
+                $('#revealSurprise').setAttribute('aria-pressed', String(!isConcealed));
+            }
         };
         await actions[actionButton.dataset.action]?.();
     });
@@ -502,11 +569,18 @@ function bindEvents() {
         const category = button.dataset.category; const text = state.daily.challenges[category];
         if (button.dataset.dailyAction === 'complete') await completeChallenge(category, text, 'daily');
         if (button.dataset.dailyAction === 'replace') { state.daily.challenges[category] = pickChallenge(category); state.daily.status[category] = 'pending'; await persist(); renderToday(); toast('Desafio trocado.'); }
-        if (button.dataset.dailyAction === 'share') await shareChallenge(text);
+        if (button.dataset.dailyAction === 'share') {
+            const hidden = !!button.closest('.daily-card').querySelector('.private-placeholder');
+            if (canShare(category, !hidden)) await shareChallenge(text);
+        }
         if (button.dataset.dailyAction === 'reveal') {
-            const paragraph = button.closest('.daily-card').querySelector('.sensitive-text');
-            paragraph?.classList.toggle('revealed');
-            button.textContent = paragraph?.classList.contains('revealed') ? 'Ocultar texto' : 'Mostrar texto';
+            const paragraph = button.closest('.daily-card').querySelector('p.private-placeholder, p.revealed-private');
+            if (!paragraph) return;
+            const concealed = paragraph.classList.toggle('private-placeholder');
+            paragraph.classList.toggle('revealed-private', !concealed);
+            paragraph.textContent = concealed ? hiddenContentMessage : text;
+            button.textContent = concealed ? 'Revelar' : 'Ocultar';
+            button.setAttribute('aria-pressed', String(!concealed));
         }
     });
 
@@ -515,11 +589,40 @@ function bindEvents() {
         const item = currentCatalogRecords[Number(button.dataset.index)]; if (!item) return;
         if (button.dataset.catalogAction === 'favorite') await toggleFavorite(item.text);
         if (button.dataset.catalogAction === 'complete') await completeChallenge(item.category, item.text, item.source);
-        if (button.dataset.catalogAction === 'share') await shareChallenge(item.text);
-        if (button.dataset.catalogAction === 'reveal') button.closest('.catalog-item').querySelector('.sensitive-text')?.classList.toggle('revealed');
-        if (button.dataset.catalogAction === 'delete' && confirm('Excluir este desafio personalizado?')) { state.customChallenges = state.customChallenges.filter(custom => custom.id !== item.id); state.favorites = state.favorites.filter(text => text !== item.text); await persist(); renderLibrary(); toast('Desafio excluído.'); }
+        if (button.dataset.catalogAction === 'share') {
+            const hidden = !!button.closest('.catalog-item').querySelector('.private-placeholder');
+            if (canShare(item.category, !hidden)) await shareChallenge(item.text);
+        }
+        if (button.dataset.catalogAction === 'reveal') {
+            const paragraph = button.closest('.catalog-item').querySelector('p.private-placeholder, p.revealed-private');
+            if (!paragraph) return;
+            const concealed = paragraph.classList.toggle('private-placeholder');
+            paragraph.classList.toggle('revealed-private', !concealed);
+            paragraph.textContent = concealed ? hiddenContentMessage : item.text;
+            button.setAttribute('aria-pressed', String(!concealed));
+            button.setAttribute('aria-label', concealed ? 'Revelar texto' : 'Ocultar texto');
+        }
+        if (button.dataset.catalogAction === 'delete' && confirm('Excluir este desafio personalizado?')) {
+            state.customChallenges = state.customChallenges.filter(custom => custom.id !== item.id);
+            if (!libraryRecords().some(record => record.text === item.text)) state.favorites = state.favorites.filter(text => text !== item.text);
+            await persist(); renderLibrary(); toast('Desafio excluído.');
+        }
     });
 
+    $('#historyList').addEventListener('click', event => {
+        const button = event.target.closest('[data-history-index]'); if (!button) return;
+        const item = currentHistoryRecords[Number(button.dataset.historyIndex)];
+        if (!item) return;
+        const paragraph = button.closest('.history-item').querySelector('p');
+        const concealed = paragraph.classList.toggle('private-placeholder');
+        paragraph.classList.toggle('revealed-private', !concealed);
+        paragraph.textContent = concealed ? hiddenContentMessage : item.text;
+        button.textContent = concealed ? 'Revelar' : 'Ocultar';
+        button.setAttribute('aria-pressed', String(!concealed));
+    });
+
+    $('#showMoreChallenges').addEventListener('click', () => { catalogLimit += 36; renderLibrary(); });
+    $('#showMoreHistory').addEventListener('click', () => { historyLimit += 50; renderHistory(); });
     $('#calendar').addEventListener('click', async event => {
         const button = event.target.closest('[data-calendar-date]'); if (!button) return;
         const key = button.dataset.calendarDate;
@@ -539,18 +642,36 @@ function bindEvents() {
     $('#profileForm').addEventListener('submit', handleProfile);
     $('#onboardingIntimacy').addEventListener('change', event => { $('#onboardingAdultOptions').hidden = !event.target.checked; });
     $('#profileIntimacy').addEventListener('change', event => { $('#profileAdultOptions').hidden = !event.target.checked; });
-    $('#challengeSearch').addEventListener('input', renderLibrary);
-    $('#libraryCategory').addEventListener('change', renderLibrary);
-    $('#historyFilter').addEventListener('change', renderHistory);
+    $('#challengeSearch').addEventListener('input', () => { catalogLimit = 36; renderLibrary(); });
+    $('#libraryCategory').addEventListener('change', () => { catalogLimit = 36; renderLibrary(); });
+    $('#historyFilter').addEventListener('change', () => { historyLimit = 50; renderHistory(); });
     $('#notificationEnabled').addEventListener('change', handleNotificationToggle);
     $('#discreetMode').addEventListener('change', async event => { state.settings.discreetMode = event.target.checked; await persist(); renderAllCurrentViews(); toast(event.target.checked ? 'Modo discreto ativado.' : 'Modo discreto desativado.'); });
-    $('#moodButtons').addEventListener('click', event => {
-        const button = event.target.closest('[data-mood]'); if (!button) return;
+    const chooseMood = button => {
         selectedMood = Number(button.dataset.mood);
-        $$('#moodButtons button').forEach(item => { const selected = item === button; item.classList.toggle('selected', selected); item.setAttribute('aria-checked', String(selected)); });
+        $$('#moodButtons button').forEach(item => {
+            const selected = item === button;
+            item.classList.toggle('selected', selected);
+            item.setAttribute('aria-checked', String(selected));
+            item.tabIndex = selected ? 0 : -1;
+        });
+    };
+    $('#moodButtons').addEventListener('click', event => {
+        const button = event.target.closest('[data-mood]'); if (button) chooseMood(button);
+    });
+    $('#moodButtons').addEventListener('keydown', event => {
+        if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+        event.preventDefault();
+        const buttons = $$('#moodButtons button');
+        const at = buttons.indexOf(document.activeElement);
+        const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+            : (at + (event.key === 'ArrowRight' ? 1 : -1) + buttons.length) % buttons.length;
+        chooseMood(buttons[next]); buttons[next].focus();
     });
     $('#notificationTime').addEventListener('change', async event => { state.settings.notificationTime = event.target.value || '20:00'; state.settings.lastReminderDate = ''; await persist(); toast('Horário salvo.'); });
     $('#backupFile').addEventListener('change', async event => { await importBackup(event.target.files?.[0]); event.target.value = ''; });
+    window.addEventListener('focus', refreshForNewDay);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshForNewDay(); });
     window.addEventListener('online', () => { updateConnectionStatus(); checkForUpdates(false); });
     window.addEventListener('offline', updateConnectionStatus);
     window.addEventListener('hashchange', () => navigate(hashScreens[location.hash.slice(1)] || 'homeScreen', false));
@@ -567,7 +688,11 @@ async function registerServiceWorker() {
             const worker = registration.installing;
             worker?.addEventListener('statechange', () => { if (worker.state === 'installed' && navigator.serviceWorker.controller) { waitingWorker = worker; $('#updateBanner').hidden = false; } });
         });
-        navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+        let reloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (reloading) return;
+            reloading = true; location.reload();
+        });
     } catch (error) { console.warn('Service Worker indisponível.', error); }
 }
 
@@ -587,6 +712,6 @@ async function init() {
 
 init().catch(error => {
     console.error(error);
-    document.body.innerHTML = '<main class="fatal-error"><h1>Não foi possível abrir o aplicativo</h1><p>Atualize a página. Se o problema continuar, restaure um backup nas configurações.</p></main>';
+    document.body.innerHTML = '<main class="fatal-error"><h1>Não foi possível abrir o aplicativo</h1><p>Atualize a página e confira se o navegador permite salvar dados neste dispositivo. Seus backups continuam disponíveis no arquivo que você exportou.</p></main>';
 });
 })();

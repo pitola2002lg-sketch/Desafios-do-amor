@@ -19,6 +19,7 @@ function weeklyProgress(state) {
 }
 
 function buildSmartReminder(state) {
+    if (state.settings?.discreetMode) return 'Seu lembrete está disponível. Abra o aplicativo para conferir.';
     const today = todayKey();
     const pending = Object.entries(state.daily.status || {})
         .filter(([, status]) => status !== 'completed')
@@ -57,8 +58,8 @@ async function showReminder(state, test = false) {
         data: { url: './#today' }
     };
     try {
-        const registration = await navigator.serviceWorker?.ready;
-        if (registration) await registration.showNotification('Desafios do Amor', options);
+        const registration = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistration() : null;
+        if (registration?.showNotification) await registration.showNotification('Desafios do Amor', options);
         else new Notification('Desafios do Amor', options);
         return true;
     } catch {
@@ -67,7 +68,11 @@ async function showReminder(state, test = false) {
 }
 
 function startNotificationSystem({ getState, save, onStatus }) {
+    let checking = false;
     const check = async () => {
+        if (checking) return;
+        checking = true;
+        try {
         const state = getState();
         if (!state?.settings.notificationsEnabled || !('Notification' in window) || Notification.permission !== 'granted') return;
         const [hour, minute] = state.settings.notificationTime.split(':').map(Number);
@@ -81,6 +86,7 @@ function startNotificationSystem({ getState, save, onStatus }) {
             await save(state);
             onStatus?.('Lembrete inteligente enviado.');
         }
+        } finally { checking = false; }
     };
     clearInterval(reminderTimer);
     reminderTimer = setInterval(check, 60_000);

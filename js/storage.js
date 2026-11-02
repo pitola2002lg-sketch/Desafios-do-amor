@@ -1,5 +1,5 @@
 (() => {
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.3.0';
 const STATE_KEY = 'desafiosDoAmorState';
 const DB_NAME = 'DesafiosDoAmorDB';
 const DB_VERSION = 2;
@@ -53,6 +53,10 @@ function parseJSON(value, fallback = null) {
 function normalizeDateKey(value) {
     const match = String(value || '').match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
     if (!match) return '';
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    if (year < 1900 || month < 1 || month > 12 || day < 1 || day > new Date(year, month, 0).getDate()) return '';
     return `${match[1]}-${match[2].padStart(2, '0')}-${match[3].padStart(2, '0')}`;
 }
 
@@ -99,7 +103,7 @@ function normalizeState(raw) {
         consentAccepted: profile.consentAccepted === true,
         intimacyEnabled: profile.intimacyEnabled === true,
         intensity: ['leve', 'moderada', 'intensa'].includes(profile.intensity) ? profile.intensity : 'moderada',
-        onboardingComplete: profile.onboardingComplete === true
+        onboardingComplete: profile.onboardingComplete === true && profile.consentAccepted === true && !!cleanText(profile.person1, 40) && !!cleanText(profile.person2, 40)
     };
     if (!base.profile.ageConfirmed || !base.profile.consentAccepted) base.profile.intimacyEnabled = false;
 
@@ -136,7 +140,9 @@ function normalizeState(raw) {
         const mood = Number.parseInt(item.mood, 10);
         if (!dateKey || !Number.isInteger(mood) || mood < 1 || mood > 5) return null;
         return { dateKey, mood, note: cleanText(item.note, 300), updatedAt: cleanText(item.updatedAt, 40) || new Date().toISOString() };
-    }).filter(Boolean).slice(-730);
+    }).filter(Boolean);
+    // Em backups antigos, cada dia pode aparecer várias vezes: manter o registro mais recente.
+    base.checkIns = [...new Map(base.checkIns.map(item => [item.dateKey, item])).values()].slice(-730);
     base.surpriseRecent = (Array.isArray(raw.surpriseRecent) ? raw.surpriseRecent : []).filter(value => typeof value === 'string').map(value => cleanText(value, 400)).filter(Boolean).slice(-12);
     base.settings = {
         darkMode: settings.darkMode === true,
@@ -156,23 +162,24 @@ function normalizeState(raw) {
 
 function migrateLegacy() {
     const state = createDefaultState();
-    const gender = localStorage.getItem('userGender');
-    const markedDates = parseJSON(localStorage.getItem('markedDates'), []);
-    const completed = parseJSON(localStorage.getItem('completedChallenges'), []);
-    const oldDaily = parseJSON(localStorage.getItem('currentDailyChallenge'), {});
-    const oldStatus = parseJSON(localStorage.getItem('challengeStatus'), {});
-    const oldDate = localStorage.getItem('lastChallengeDate');
+    const getLegacy = key => { try { return localStorage.getItem(key); } catch { return null; } };
+    const gender = getLegacy('userGender');
+    const markedDates = parseJSON(getLegacy('markedDates'), []);
+    const completed = parseJSON(getLegacy('completedChallenges'), []);
+    const oldDaily = parseJSON(getLegacy('currentDailyChallenge'), {});
+    const oldStatus = parseJSON(getLegacy('challengeStatus'), {});
+    const oldDate = getLegacy('lastChallengeDate');
 
     if (['male', 'female', 'other'].includes(gender)) {
         state.profile.gender = gender;
-        state.profile.onboardingComplete = true;
+        // O perfil antigo não registra consentimento: sempre solicitar onboarding.
     }
     state.profile.person1 = 'Você';
     state.profile.person2 = 'Seu amor';
     state.profile.intimacyEnabled = false;
-    state.settings.darkMode = localStorage.getItem('darkMode') === 'true';
-    state.settings.notificationsEnabled = localStorage.getItem('notificationEnabled') === 'true';
-    state.settings.notificationTime = validTime(localStorage.getItem('notificationTime'));
+    state.settings.darkMode = getLegacy('darkMode') === 'true';
+    state.settings.notificationsEnabled = getLegacy('notificationEnabled') === 'true';
+    state.settings.notificationTime = validTime(getLegacy('notificationTime'));
     state.markedDates = Array.isArray(markedDates) ? markedDates.map(normalizeDateKey).filter(Boolean) : [];
     state.completions = Array.isArray(completed) ? completed.map(normalizeCompletion).filter(Boolean) : [];
     const oldDateParsed = oldDate ? new Date(oldDate) : null;
@@ -220,15 +227,19 @@ async function idbSet(state) {
             transaction.objectStore(STORE).put(state, 'latest');
             transaction.oncomplete = resolve;
             transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () => reject(transaction.error || new Error('Transação cancelada'));
         });
         db.close();
+        return true;
     } catch (error) {
-        console.warn('Não foi possível atualizar a cópia no IndexedDB.', error);
+        console.warn('Cópia IndexedDB indisponível.', error);
+        return false;
     }
 }
 
 async function loadState() {
-    const local = parseJSON(localStorage.getItem(STATE_KEY));
+    let local = null;
+    try { local = parseJSON(localStorage.getItem(STATE_KEY)); } catch { /* Navegador pode bloquear localStorage. */ }
     const indexed = await idbGet();
     let selected;
     if (local && indexed) {
@@ -247,8 +258,11 @@ async function saveState(state) {
     state.updatedAt = normalized.updatedAt;
     state.appVersion = APP_VERSION;
     state.schemaVersion = 3;
-    localStorage.setItem(STATE_KEY, JSON.stringify(normalized));
-    await idbSet(normalized);
+    let localSaved = false;
+    try { localStorage.setItem(STATE_KEY, JSON.stringify(normalized)); localSaved = true; }
+    catch (error) { console.warn('localStorage indisponível.', error); }
+    const indexedSaved = await idbSet(normalized);
+    if (!localSaved && !indexedSaved) throw new Error('Não foi possível salvar: armazenamento do dispositivo indisponível.');
     return normalized;
 }
 
@@ -263,11 +277,13 @@ function serializeBackup(state) {
 
 function parseBackup(text) {
     const data = JSON.parse(text);
-    if (!data || data.format !== 'desafios-do-amor-backup' || !data.state || typeof data.state !== 'object') {
-        throw new Error('Formato de backup inválido');
+    if (!data || data.format !== 'desafios-do-amor-backup' || !data.state || typeof data.state !== 'object' || Array.isArray(data.state)
+        || !data.state.profile || typeof data.state.profile !== 'object' || !data.state.settings || typeof data.state.settings !== 'object'
+        || !Array.isArray(data.state.completions) || !Array.isArray(data.state.markedDates)) {
+        throw new Error('Formato de backup inválido ou incompleto');
     }
+    if (Number(data.schemaVersion) > 3) throw new Error('Backup criado em versão futura não suportada');
     const normalized = normalizeState(data.state);
-    if (!Array.isArray(normalized.completions) || !Array.isArray(normalized.markedDates)) throw new Error('Dados obrigatórios ausentes');
     return normalized;
 }
 
